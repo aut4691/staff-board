@@ -8,6 +8,7 @@ interface TaskCardProps {
   onViewDetails: (taskId: string) => void
   hasFeedback?: boolean
   hasUnreadFeedback?: boolean
+  isFeedbackViewed?: boolean
 }
 
 const getStatusColor = (color: TrafficLightColor) => {
@@ -36,12 +37,6 @@ const getPriorityBadge = (trafficLight: TrafficLightColor) => {
   }
 }
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  return `${month}/${day}`
-}
 
 const getDaysRemaining = (deadline: string) => {
   const today = new Date()
@@ -58,6 +53,7 @@ export const TaskCard = ({
   onViewDetails,
   hasFeedback = false,
   hasUnreadFeedback = false,
+  isFeedbackViewed = false,
 }: TaskCardProps) => {
   const statusColor = getStatusColor(task.traffic_light)
   const priorityBadge = getPriorityBadge(task.traffic_light)
@@ -127,10 +123,21 @@ export const TaskCard = ({
             e.stopPropagation()
             onViewFeedback(task.id)
           }}
-          className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium"
+          className={`flex items-center gap-1 px-3 py-2 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium ${
+            hasUnreadFeedback
+              ? 'bg-gradient-to-r from-red-500 to-red-600 animate-pulse'
+              : isFeedbackViewed && hasFeedback
+              ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+              : hasFeedback
+              ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
+              : 'bg-gradient-to-r from-gray-400 to-gray-500'
+          }`}
         >
           <MessageCircle className="w-3 h-3" />
           <span>피드백</span>
+          {hasUnreadFeedback && (
+            <span className="ml-1 w-2 h-2 bg-white rounded-full animate-ping" />
+          )}
         </button>
       </div>
       

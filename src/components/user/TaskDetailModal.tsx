@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Calendar, TrendingUp, Clock, User as UserIcon, FileText, Trash2, MessageCircle, Edit } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import type { Task } from '@/types/index'
 
 interface TaskDetailModalProps {
@@ -10,7 +11,6 @@ interface TaskDetailModalProps {
   onDeleteTask: (taskId: string) => void
   onUpdateDeadline: (taskId: string, newDeadline: string) => void
   onViewFeedback?: (taskId: string) => void
-  hasFeedback?: boolean
 }
 
 const getStatusLabel = (status: string) => {
@@ -70,11 +70,47 @@ export const TaskDetailModal = ({
   onDeleteTask,
   onUpdateDeadline,
   onViewFeedback,
-  hasFeedback = false,
 }: TaskDetailModalProps) => {
   const [isEditingDeadline, setIsEditingDeadline] = useState(false)
   const [newDeadline, setNewDeadline] = useState(task.deadline)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [assignedUserName, setAssignedUserName] = useState<string>('로딩 중...')
+
+  // Fetch assigned user name
+  useEffect(() => {
+    const fetchAssignedUserName = async () => {
+      if (!task.assigned_to) {
+        setAssignedUserName('담당자 없음')
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('name, position')
+          .eq('id', task.assigned_to)
+          .single()
+
+        if (error) {
+          console.error('Error fetching assigned user:', error)
+          setAssignedUserName('알 수 없음')
+        } else if (data) {
+          const name = data.name || '알 수 없음'
+          const position = data.position ? ` (${data.position})` : ''
+          setAssignedUserName(`${name}${position}`)
+        } else {
+          setAssignedUserName('알 수 없음')
+        }
+      } catch (error) {
+        console.error('Error fetching assigned user:', error)
+        setAssignedUserName('알 수 없음')
+      }
+    }
+
+    if (isOpen && task.assigned_to) {
+      fetchAssignedUserName()
+    }
+  }, [isOpen, task.assigned_to])
 
   // ESC 키로 모달 닫기
   useEffect(() => {
@@ -264,7 +300,7 @@ export const TaskDetailModal = ({
               담당자
             </h4>
             <p className="text-gray-600 bg-gray-50 rounded-xl p-4">
-              {task.assigned_to}
+              {assignedUserName}
             </p>
           </div>
 

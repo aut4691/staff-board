@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { X, Calendar, TrendingUp, Clock, User as UserIcon, FileText, MessageCircle } from 'lucide-react'
 import type { Task } from '@/types/index'
 

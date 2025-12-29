@@ -1,114 +1,43 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { useTasks, useUpdateTask, useCreateTask, useDeleteTask } from '@/hooks/useTasks'
+import { useUnreadFeedbacks, useAllFeedbacks, useMarkFeedbackRead } from '@/hooks/useFeedbacks'
 import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { FeedbackBanner } from '@/components/user/FeedbackBanner'
 import { KanbanBoard } from '@/components/user/KanbanBoard'
 import { FeedbackModal } from '@/components/user/FeedbackModal'
+import { FeedbackListModal } from '@/components/user/FeedbackListModal'
 import { StatusUpdateModal } from '@/components/user/StatusUpdateModal'
 import { TaskDetailModal } from '@/components/user/TaskDetailModal'
 import { NewTaskModal } from '@/components/user/NewTaskModal'
-import type { Task, TaskStatus, TrafficLightColor } from '@/types/index'
-
-// Mock data for demonstration
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    title: '데이터 댐 구축 2차 제안서 마감',
-    description: '데이터 댐 구축 사업 2차 제안서 작성 및 제출\n- 예산 계획서 검토\n- 기술 스펙 문서 작성\n- 사업 일정표 업데이트',
-    assigned_to: '김 책임',
-    status: 'todo',
-    progress: 0,
-    deadline: '2024-10-25',
-    traffic_light: 'red',
-    created_at: '2024-10-01',
-    updated_at: '2024-10-20',
-  },
-  {
-    id: '2',
-    title: '모델 학습 데이터 확보',
-    description: '모델 학습을 위한 데이터셋 수집 및 정제 작업\n- 공공 데이터 포털 활용\n- 데이터 전처리 및 라벨링\n- 품질 검증',
-    assigned_to: '김 책임',
-    status: 'todo',
-    progress: 30,
-    deadline: '2024-10-27',
-    traffic_light: 'green',
-    created_at: '2024-10-01',
-    updated_at: '2024-10-18',
-  },
-  {
-    id: '3',
-    title: '시내 교통 분석 보고서',
-    description: '도심 교통 혼잡도 분석 보고서 작성\n- 교통량 데이터 수집\n- 시간대별 분석\n- 개선 방안 도출',
-    assigned_to: '김 책임',
-    status: 'todo',
-    progress: 0,
-    deadline: '2024-10-30',
-    traffic_light: 'yellow',
-    created_at: '2024-10-05',
-    updated_at: '2024-10-15',
-  },
-  {
-    id: '4',
-    title: '데이터 분석 시스템 구축',
-    description: '데이터 분석 시스템 기술 검토 및 보완\n- 아키텍처 설계 검토\n- 보안 요구사항 확인\n- 운영 계획 수립',
-    assigned_to: '김 책임',
-    status: 'in_progress',
-    progress: 50,
-    deadline: '2024-10-25',
-    traffic_light: 'yellow',
-    created_at: '2024-10-01',
-    updated_at: '2024-10-22',
-  },
-  {
-    id: '5',
-    title: '데이터 품질 관리',
-    description: '데이터 품질 개선을 위한 추가 작업\n- 기존 데이터 분석\n- 부족한 항목 보완\n- 검증 프로세스 구축',
-    assigned_to: '김 책임',
-    status: 'in_progress',
-    progress: 75,
-    deadline: '2024-10-27',
-    traffic_light: 'green',
-    created_at: '2024-10-05',
-    updated_at: '2024-10-24',
-  },
-  {
-    id: '6',
-    title: '초기 데이터 수집 완료',
-    description: '초기 데이터 수집 작업 완료\n- 10만 건 데이터 확보\n- 품질 검증 완료\n- 데이터 제공',
-    assigned_to: '김 책임',
-    status: 'completed',
-    progress: 100,
-    deadline: '2024-10-27',
-    traffic_light: 'green',
-    created_at: '2024-09-15',
-    updated_at: '2024-10-10',
-  },
-  {
-    id: '7',
-    title: '1차 제안서 제출',
-    description: '1차 제안서 작성 및 제출 완료\n- 사업 계획서 작성\n- 예산 편성\n- 기술 검토 완료',
-    assigned_to: '김 책임',
-    status: 'completed',
-    progress: 100,
-    deadline: '2024-09-30',
-    traffic_light: 'green',
-    created_at: '2024-09-01',
-    updated_at: '2024-09-29',
-  },
-]
+import { useQueryClient } from '@tanstack/react-query'
+import type { TaskStatus, TrafficLightColor } from '@/types/index'
 
 export const UserPage = () => {
+  const { user, isLoading: authLoading, signOut } = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks(user?.id, false)
+  const { data: unreadFeedbacks = [] } = useUnreadFeedbacks(user?.id || '')
+  const { data: allFeedbacks = [] } = useAllFeedbacks(user?.id || '')
+  const updateTask = useUpdateTask()
+  const createTask = useCreateTask()
+  const deleteTask = useDeleteTask()
+  const markFeedbackRead = useMarkFeedbackRead()
+
   const [selectedMenu, setSelectedMenu] = useState('all')
-  const [tasks, setTasks] = useState<Task[]>(mockTasks)
-  const [showFeedbackBanner, setShowFeedbackBanner] = useState(true)
-  
+  const [showFeedbackBanner, setShowFeedbackBanner] = useState(unreadFeedbacks.length > 0)
+
   // Modal states
   const [feedbackModal, setFeedbackModal] = useState<{
     isOpen: boolean
     taskId: string | null
   }>({ isOpen: false, taskId: null })
-  
+
   const [statusModal, setStatusModal] = useState<{
     isOpen: boolean
     taskId: string | null
@@ -120,11 +49,30 @@ export const UserPage = () => {
   }>({ isOpen: false, taskId: null })
 
   const [newTaskModal, setNewTaskModal] = useState(false)
+  const [viewedFeedbackTaskIds, setViewedFeedbackTaskIds] = useState<Set<string>>(new Set())
+  const [feedbackListModal, setFeedbackListModal] = useState(false)
+
+  // Update feedback banner when unread feedbacks change
+  useEffect(() => {
+    setShowFeedbackBanner(unreadFeedbacks.length > 0)
+  }, [unreadFeedbacks.length])
+
+  // Initialize viewed feedback task IDs from all feedbacks (read feedbacks)
+  useEffect(() => {
+    const readFeedbackTaskIds = new Set(
+      allFeedbacks
+        .filter(f => f.is_read)
+        .map(f => f.task_id)
+    )
+    if (readFeedbackTaskIds.size > 0) {
+      setViewedFeedbackTaskIds(prev => new Set([...prev, ...readFeedbackTaskIds]))
+    }
+  }, [allFeedbacks])
 
   // Filter tasks based on selected menu
   const filteredTasks = useMemo(() => {
     const today = new Date().toISOString().split('T')[0]
-    
+
     switch (selectedMenu) {
       case 'today':
         return tasks.filter((task) => task.deadline === today)
@@ -143,9 +91,9 @@ export const UserPage = () => {
     const today = new Date().toISOString().split('T')[0]
     return {
       all: tasks.length,
-      today: tasks.filter(t => t.deadline === today).length,
-      inProgress: tasks.filter(t => t.status === 'in_progress').length,
-      completed: tasks.filter(t => t.status === 'completed').length,
+      today: tasks.filter((t) => t.deadline === today).length,
+      inProgress: tasks.filter((t) => t.status === 'in_progress').length,
+      completed: tasks.filter((t) => t.status === 'completed').length,
     }
   }, [tasks])
 
@@ -158,92 +106,141 @@ export const UserPage = () => {
   const handleViewFeedback = (taskId: string) => {
     setDetailModal({ isOpen: false, taskId: null })
     setFeedbackModal({ isOpen: true, taskId })
+    // Mark feedback as viewed when opening modal
+    setViewedFeedbackTaskIds(prev => new Set([...prev, taskId]))
   }
 
   const handleViewDetails = (taskId: string) => {
     setDetailModal({ isOpen: true, taskId })
   }
 
-  const handleDragTask = (taskId: string, newStatus: TaskStatus) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === taskId
-          ? { 
-              ...task, 
-              status: newStatus, 
-              // 완료 상태로 변경되면 진행률을 자동으로 100%로 설정
-              progress: newStatus === 'completed' ? 100 : task.progress,
-              updated_at: new Date().toISOString() 
-            }
-          : task
-      )
-    )
+  const handleDragTask = async (taskId: string, newStatus: TaskStatus) => {
+    const progress = newStatus === 'completed' ? 100 : undefined
+    await updateTask.mutateAsync({
+      taskId,
+      updates: {
+        status: newStatus,
+        ...(progress !== undefined && { progress }),
+        updated_at: new Date().toISOString(),
+      },
+    })
   }
 
-  const handleSaveStatus = (status: TaskStatus, progress: number, memo?: string) => {
+  const handleSaveStatus = async (
+    status: TaskStatus,
+    progress: number,
+    memo?: string
+  ) => {
     if (statusModal.taskId) {
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.id === statusModal.taskId
-            ? { 
-                ...task, 
-                status, 
-                // 완료 상태로 변경되면 진행률을 자동으로 100%로 설정
-                progress: status === 'completed' ? 100 : progress, 
-                updated_at: new Date().toISOString() 
-              }
-            : task
-        )
-      )
-      console.log('Status updated:', { status, progress, memo })
+      await updateTask.mutateAsync({
+        taskId: statusModal.taskId,
+        updates: {
+          status,
+          progress: status === 'completed' ? 100 : progress,
+          ...(memo?.trim() ? { memo: memo.trim() } : {}),
+          updated_at: new Date().toISOString(),
+        },
+      })
+      setStatusModal({ isOpen: false, taskId: null })
     }
   }
 
-  const handleConfirmFeedback = () => {
-    // 피드백 확인 시 모달 닫기 및 알람 배너 닫기
+  const handleConfirmFeedback = async () => {
+    // Mark only the current feedback as read
+    if (feedbackModal.taskId) {
+      const feedbackToMark = unreadFeedbacks.find(f => f.task_id === feedbackModal.taskId)
+      if (feedbackToMark) {
+        await markFeedbackRead.mutateAsync(feedbackToMark.id)
+      }
+      // Mark feedback task as viewed when confirmed
+      setViewedFeedbackTaskIds(prev => new Set([...prev, feedbackModal.taskId!]))
+    }
+    
     setFeedbackModal({ isOpen: false, taskId: null })
     setShowFeedbackBanner(false)
   }
 
-  const handleCloseFeedbackModal = () => {
-    // 피드백 모달을 닫을 때는 알람 배너는 유지 (확인하지 않고 닫은 경우)
-    setFeedbackModal({ isOpen: false, taskId: null })
+  const handleDeleteTask = async (taskId: string) => {
+    if (confirm('정말 이 업무를 삭제하시겠습니까?')) {
+      await deleteTask.mutateAsync(taskId)
+      setDetailModal({ isOpen: false, taskId: null })
+    }
   }
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks((prev) => prev.filter((task) => task.id !== taskId))
+  const handleUpdateDeadline = async (taskId: string, newDeadline: string) => {
+    // Calculate traffic light based on new deadline
+    const today = new Date()
+    const deadlineDate = new Date(newDeadline)
+    const diffTime = deadlineDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    let trafficLight: TrafficLightColor = 'green'
+    if (diffDays < 0 || diffDays <= 3) trafficLight = 'red'
+    else if (diffDays <= 7) trafficLight = 'yellow'
+
+    await updateTask.mutateAsync({
+      taskId,
+      updates: {
+        deadline: newDeadline,
+        traffic_light: trafficLight,
+        updated_at: new Date().toISOString(),
+      },
+    })
   }
 
-  const handleUpdateDeadline = (taskId: string, newDeadline: string) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === taskId
-          ? { ...task, deadline: newDeadline, updated_at: new Date().toISOString() }
-          : task
-      )
-    )
-  }
-
-  const handleCreateTask = (title: string, description: string, deadline: string, status: TaskStatus, trafficLight: TrafficLightColor) => {
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title,
-      description,
-      assigned_to: '김 책임',
-      status,
-      progress: status === 'completed' ? 100 : status === 'in_progress' ? 50 : 0,
-      deadline,
-      traffic_light: trafficLight,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+  const handleCreateTask = async (
+    title: string,
+    description: string,
+    deadline: string,
+    status: TaskStatus,
+    trafficLight: TrafficLightColor
+  ) => {
+    if (!user?.id) {
+      alert('로그인이 필요합니다.')
+      return
     }
 
-    setTasks((prev) => [newTask, ...prev])
+    try {
+      console.log('Creating task:', { title, description, deadline, status, trafficLight, assigned_to: user.id })
+      const result = await createTask.mutateAsync({
+        title: title.trim(),
+        description: description?.trim() || '',
+        assigned_to: user.id,
+        deadline,
+        status,
+        traffic_light: trafficLight,
+      })
+      console.log('Task created successfully:', result)
+      setNewTaskModal(false)
+    } catch (error: any) {
+      console.error('Error creating task:', error)
+      const errorMessage = error?.message || error?.error?.message || '알 수 없는 오류'
+      alert(`업무 생성에 실패했습니다: ${errorMessage}`)
+    }
+  }
+
+  const handleCloseFeedbackModal = () => {
+    setFeedbackModal({ isOpen: false, taskId: null })
   }
 
   const currentTask = statusModal.taskId
     ? tasks.find((t) => t.id === statusModal.taskId)
     : null
+
+  // Debug: Log currentTask when status modal opens
+  useEffect(() => {
+    if (statusModal.isOpen && currentTask) {
+      console.log('StatusUpdateModal - currentTask:', {
+        id: currentTask.id,
+        title: currentTask.title,
+        description: currentTask.description,
+        memo: currentTask.memo,
+        status: currentTask.status,
+        progress: currentTask.progress,
+        willUseMemo: currentTask.memo || currentTask.description || '',
+      })
+    }
+  }, [statusModal.isOpen, currentTask])
 
   const feedbackTask = feedbackModal.taskId
     ? tasks.find((t) => t.id === feedbackModal.taskId)
@@ -253,28 +250,81 @@ export const UserPage = () => {
     ? tasks.find((t) => t.id === detailModal.taskId)
     : null
 
+  // Loading state
+  if (authLoading || tasksLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Not authenticated
+  if (!user) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">로그인이 필요합니다.</p>
+          <button
+            onClick={() => {
+              // TODO: Implement login
+              console.log('Login required')
+            }}
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            로그인
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
       <Header
-        userName="김 책임"
-        hasNewFeedback={showFeedbackBanner}
-        onNotificationClick={() => console.log('Notification clicked')}
-        onProfileClick={() => console.log('Profile clicked')}
+        userName={user.name}
+        hasNewFeedback={unreadFeedbacks.length > 0}
+        feedbackCount={unreadFeedbacks.length}
+        onNotificationClick={() => {
+          if (unreadFeedbacks.length > 0) {
+            setFeedbackListModal(true)
+          }
+        }}
+        onProfileClick={() => navigate('/profile')}
+        onLogoutClick={async () => {
+          if (window.confirm('로그아웃 하시겠습니까?')) {
+            try {
+              await signOut()
+              navigate('/login', { replace: true })
+              window.location.href = '/login'
+            } catch (error) {
+              console.error('Logout error:', error)
+              alert('로그아웃 중 오류가 발생했습니다.')
+            }
+          }
+        }}
       />
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden relative min-h-0">
         {/* Feedback Banner - Now positioned fixed in top-right */}
-        {showFeedbackBanner && (
-          <FeedbackBanner 
+        {showFeedbackBanner && unreadFeedbacks.length > 0 && (
+          <FeedbackBanner
             onClose={() => setShowFeedbackBanner(false)}
-            onClick={() => handleViewFeedback('1')}
+            onClick={() => {
+              if (unreadFeedbacks.length > 0) {
+                handleViewFeedback(unreadFeedbacks[0].task_id)
+              }
+            }}
           />
         )}
         {/* Sidebar */}
-        <Sidebar 
-          selectedMenu={selectedMenu} 
+        <Sidebar
+          selectedMenu={selectedMenu}
           onMenuChange={setSelectedMenu}
           taskCounts={taskCounts}
         />
@@ -287,12 +337,16 @@ export const UserPage = () => {
             onViewFeedback={handleViewFeedback}
             onViewDetails={handleViewDetails}
             onDragTask={handleDragTask}
+            showStats={selectedMenu === 'all'}
+            unreadFeedbackTaskIds={unreadFeedbacks.map(f => f.task_id)}
+            allFeedbackTaskIds={[...new Set(allFeedbacks.map(f => f.task_id))]}
+            viewedFeedbackTaskIds={viewedFeedbackTaskIds}
           />
-          
+
           {/* Floating Add Button */}
           <button
             onClick={() => setNewTaskModal(true)}
-            className="fixed bottom-6 right-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-2xl shadow-lg hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 z-40 flex items-center gap-2 group"
+            className="fixed bottom-24 right-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-2xl shadow-lg hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 z-40 flex items-center gap-2 group"
             title="새 업무 등록"
           >
             <div className="bg-white/20 p-1.5 rounded-lg group-hover:bg-white/30 transition-all duration-300">
@@ -311,6 +365,7 @@ export const UserPage = () => {
           taskTitle={currentTask.title}
           currentStatus={currentTask.status}
           currentProgress={currentTask.progress}
+          currentMemo={currentTask.memo || currentTask.description || ''}
           onSave={handleSaveStatus}
         />
       )}
@@ -320,9 +375,22 @@ export const UserPage = () => {
           isOpen={feedbackModal.isOpen}
           onClose={handleCloseFeedbackModal}
           taskTitle={feedbackTask.title}
-          feedbackMessage="예산팀장과 통화했으니 기술 부분 먼저 진행하세요. (<IMAGE 0> 참조)"
+          feedbackMessage={
+            unreadFeedbacks.find((f) => f.task_id === feedbackTask.id)?.message || ''
+          }
           onConfirm={handleConfirmFeedback}
-          feedbackDate="2024년 10월 25일"
+          feedbackDate={
+            unreadFeedbacks.find((f) => f.task_id === feedbackTask.id)?.created_at
+              ? new Date(
+                  unreadFeedbacks.find((f) => f.task_id === feedbackTask.id)!.created_at
+                ).toLocaleDateString('ko-KR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })
+              : undefined
+          }
+          taskId={feedbackTask.id}
         />
       )}
 
@@ -335,7 +403,6 @@ export const UserPage = () => {
           onDeleteTask={handleDeleteTask}
           onUpdateDeadline={handleUpdateDeadline}
           onViewFeedback={handleViewFeedback}
-          hasFeedback={true} // 모든 업무에 피드백 버튼 표시 (실제로는 피드백 여부 체크)
         />
       )}
 
@@ -344,7 +411,25 @@ export const UserPage = () => {
         onClose={() => setNewTaskModal(false)}
         onCreateTask={handleCreateTask}
       />
+
+      {/* Feedback List Modal */}
+      <FeedbackListModal
+        isOpen={feedbackListModal}
+        onClose={() => setFeedbackListModal(false)}
+        unreadFeedbacks={unreadFeedbacks}
+        userId={user?.id}
+        onMarkAsViewed={() => {
+          // Invalidate queries to refresh unread feedbacks count
+          queryClient.invalidateQueries({ queryKey: ['unread-feedbacks'] })
+          queryClient.invalidateQueries({ queryKey: ['all-feedbacks'] })
+        }}
+        onFeedbackClick={(taskId) => {
+          handleViewFeedback(taskId)
+        }}
+      />
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }
-

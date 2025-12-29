@@ -1,161 +1,100 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/hooks/useAuth'
+import { useTasks } from '@/hooks/useTasks'
+import { useEmployees } from '@/hooks/useEmployees'
+import { useCreateFeedback, useAdminUnreadComments } from '@/hooks/useFeedbacks'
+import { useQueryClient } from '@tanstack/react-query'
 import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { EmployeeColumn } from '@/components/admin/EmployeeColumn'
 import { FeedbackWriteModal } from '@/components/admin/FeedbackWriteModal'
 import { AdminTaskDetailModal } from '@/components/admin/AdminTaskDetailModal'
 import { StatisticsView } from '@/components/admin/StatisticsView'
-import type { Task, TaskStatus } from '@/types/index'
-
-// Mock data for demonstration
-const mockEmployees = [
-  { id: '1', name: '김 책임', position: '팀장' },
-  { id: '2', name: '박 연구원', position: '연구원' },
-  { id: '3', name: '이 사원', position: '사원' },
-]
-
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    title: '데이터 댐 구축 2차 제안서 마감',
-    description: '데이터 댐 구축 사업 2차 제안서 작성 및 제출',
-    assigned_to: '1', // 김 책임
-    status: 'todo',
-    progress: 0,
-    deadline: '2024-10-25',
-    traffic_light: 'red',
-    created_at: '2024-10-01',
-    updated_at: '2024-10-20',
-  },
-  {
-    id: '2',
-    title: '모델 학습 데이터 확보',
-    description: '모델 학습을 위한 데이터셋 수집 및 정제 작업',
-    assigned_to: '1', // 김 책임
-    status: 'in_progress',
-    progress: 30,
-    deadline: '2024-10-27',
-    traffic_light: 'green',
-    created_at: '2024-10-01',
-    updated_at: '2024-10-18',
-  },
-  {
-    id: '3',
-    title: '시내 교통 분석 보고서',
-    description: '도심 교통 혼잡도 분석 보고서 작성',
-    assigned_to: '2', // 박 연구원
-    status: 'todo',
-    progress: 0,
-    deadline: '2024-10-30',
-    traffic_light: 'yellow',
-    created_at: '2024-10-05',
-    updated_at: '2024-10-15',
-  },
-  {
-    id: '4',
-    title: '데이터 분석 시스템 구축',
-    description: '데이터 분석 시스템 기술 검토 및 보완',
-    assigned_to: '2', // 박 연구원
-    status: 'in_progress',
-    progress: 50,
-    deadline: '2024-10-25',
-    traffic_light: 'yellow',
-    created_at: '2024-10-01',
-    updated_at: '2024-10-22',
-  },
-  {
-    id: '5',
-    title: '데이터 품질 관리',
-    description: '데이터 품질 개선을 위한 추가 작업',
-    assigned_to: '3', // 이 사원
-    status: 'in_progress',
-    progress: 75,
-    deadline: '2024-10-27',
-    traffic_light: 'green',
-    created_at: '2024-10-05',
-    updated_at: '2024-10-24',
-  },
-  {
-    id: '6',
-    title: '초기 데이터 수집 완료',
-    description: '초기 데이터 수집 작업 완료',
-    assigned_to: '3', // 이 사원
-    status: 'completed',
-    progress: 100,
-    deadline: '2024-10-27',
-    traffic_light: 'green',
-    created_at: '2024-09-15',
-    updated_at: '2024-10-10',
-  },
-]
+import { CommentListModal } from '@/components/admin/CommentListModal'
+import type { Task } from '@/types/index'
 
 export const AdminPage = () => {
+  const { user, isLoading: authLoading, signOut } = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks(undefined, true)
+  const { data: employees = [], isLoading: employeesLoading } = useEmployees()
+  const { data: unreadComments = [] } = useAdminUnreadComments(user?.id || '')
+  const createFeedback = useCreateFeedback()
+
   const [selectedFilter, setSelectedFilter] = useState('all')
   const [feedbackModal, setFeedbackModal] = useState<{
     isOpen: boolean
     taskId: string | null
     employeeId: string | null
   }>({ isOpen: false, taskId: null, employeeId: null })
-  
+
   const [detailModal, setDetailModal] = useState<{
     isOpen: boolean
     taskId: string | null
     employeeId: string | null
   }>({ isOpen: false, taskId: null, employeeId: null })
 
+  const [commentListModal, setCommentListModal] = useState(false)
+
   // Filter tasks based on selected filter
   const filteredTasks = useMemo(() => {
-    let filtered = [...mockTasks]
+    let filtered = [...tasks]
     const today = new Date().toISOString().split('T')[0]
 
     switch (selectedFilter) {
       case 'today':
-        // 오늘 마감인 업무
         filtered = filtered.filter((task) => task.deadline === today)
         break
       case 'in-progress':
-        // 진행 중인 업무
         filtered = filtered.filter((task) => task.status === 'in_progress')
         break
       case 'completed':
-        // 완료된 업무
         filtered = filtered.filter((task) => task.status === 'completed')
         break
       case 'all':
       default:
-        // 모든 업무 표시
         break
     }
 
     return filtered
-  }, [selectedFilter])
+  }, [selectedFilter, tasks])
 
   // Task counts for sidebar
   const taskCounts = useMemo(() => {
     const today = new Date().toISOString().split('T')[0]
-    const allTasks = mockTasks
-    
     return {
-      all: allTasks.length,
-      today: allTasks.filter((t) => t.deadline === today).length,
-      inProgress: allTasks.filter((t) => t.status === 'in_progress').length,
-      completed: allTasks.filter((t) => t.status === 'completed').length,
+      all: tasks.length,
+      today: tasks.filter((t) => t.deadline === today).length,
+      inProgress: tasks.filter((t) => t.status === 'in_progress').length,
+      completed: tasks.filter((t) => t.status === 'completed').length,
     }
-  }, [])
+  }, [tasks])
+
+  // Filter employees (exclude admin)
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((emp) => emp.role !== 'admin')
+  }, [employees])
 
   // Group tasks by employee
   const tasksByEmployee = useMemo(() => {
     const grouped: Record<string, Task[]> = {}
-    
-    mockEmployees.forEach((employee) => {
+
+    filteredEmployees.forEach((employee) => {
       grouped[employee.id] = filteredTasks.filter(
         (task) => task.assigned_to === employee.id
       )
     })
 
     return grouped
-  }, [filteredTasks])
+  }, [filteredTasks, filteredEmployees])
 
+  // Get tasks with new comments
+  const tasksWithNewComments = useMemo(() => {
+    return new Set(unreadComments.map((item) => item.task_id))
+  }, [unreadComments])
 
   const handleFeedbackClick = (taskId: string, employeeId: string) => {
     setDetailModal({ isOpen: false, taskId: null, employeeId: null })
@@ -174,32 +113,98 @@ export const AdminPage = () => {
     setDetailModal({ isOpen: false, taskId: null, employeeId: null })
   }
 
-  const handleSendFeedback = (message: string) => {
-    console.log('Sending feedback:', {
-      taskId: feedbackModal.taskId,
-      employeeId: feedbackModal.employeeId,
-      message,
-    })
-    // TODO: 실제 API 호출
-    handleCloseFeedback()
+  const handleSendFeedback = async (message: string) => {
+    if (!feedbackModal.taskId || !feedbackModal.employeeId) {
+      alert('업무와 담당자 정보가 필요합니다.')
+      return
+    }
+
+    if (!message.trim()) {
+      alert('피드백 내용을 입력해주세요.')
+      return
+    }
+
+    try {
+      console.log('Sending feedback:', {
+        taskId: feedbackModal.taskId,
+        toUserId: feedbackModal.employeeId,
+        message: message.trim(),
+      })
+      
+      const result = await createFeedback.mutateAsync({
+        taskId: feedbackModal.taskId,
+        toUserId: feedbackModal.employeeId,
+        message: message.trim(),
+      })
+      
+      console.log('Feedback sent successfully:', result)
+      // 모달을 닫지 않고 유지 - 사용자가 계속 피드백을 작성할 수 있도록
+    } catch (error: any) {
+      console.error('Error sending feedback:', error)
+      const errorMessage = error?.message || error?.error?.message || '알 수 없는 오류'
+      alert(`피드백 전송에 실패했습니다: ${errorMessage}`)
+    }
   }
 
   const currentTask = feedbackModal.taskId
-    ? mockTasks.find((t) => t.id === feedbackModal.taskId)
+    ? tasks.find((t) => t.id === feedbackModal.taskId)
     : null
 
   const currentEmployee = feedbackModal.employeeId
-    ? mockEmployees.find((e) => e.id === feedbackModal.employeeId)
+    ? employees.find((e) => e.id === feedbackModal.employeeId)
     : null
+
+  // Loading state
+  if (authLoading || tasksLoading || employeesLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Not authenticated or not admin
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">
+            관리자 권한이 필요합니다.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
       <Header
         userName="관리자 대시보드"
-        hasNewFeedback={false}
-        onNotificationClick={() => console.log('Notification clicked')}
-        onProfileClick={() => console.log('Profile clicked')}
+        hasNewFeedback={unreadComments.length > 0}
+        feedbackCount={unreadComments.length}
+        onNotificationClick={() => {
+          if (unreadComments.length > 0) {
+            // Open comment list modal
+            setCommentListModal(true)
+          }
+        }}
+        onProfileClick={() => navigate('/profile')}
+        onLogoutClick={async () => {
+          if (window.confirm('로그아웃 하시겠습니까?')) {
+            try {
+              await signOut()
+              navigate('/login', { replace: true })
+              window.location.href = '/login'
+            } catch (error) {
+              console.error('Logout error:', error)
+              alert('로그아웃 중 오류가 발생했습니다.')
+            }
+          }
+        }}
       />
 
       {/* Main Content */}
@@ -215,7 +220,7 @@ export const AdminPage = () => {
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-gray-50 to-blue-50 overflow-y-auto custom-scrollbar min-h-0">
             {selectedFilter === 'statistics' ? (
-              <StatisticsView tasks={mockTasks} employees={mockEmployees} />
+              <StatisticsView tasks={tasks} employees={employees} />
             ) : (
               <>
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-3 sm:mb-4 md:mb-6">
@@ -224,16 +229,21 @@ export const AdminPage = () => {
 
                 {/* Employee Columns */}
                 <div className="flex gap-3 md:gap-4 lg:gap-6 overflow-x-auto pb-4 custom-scrollbar min-w-0">
-                  {mockEmployees.map((employee) => {
-                    const tasks = tasksByEmployee[employee.id] || []
+                  {filteredEmployees.map((employee) => {
+                    const employeeTasks = tasksByEmployee[employee.id] || []
 
                     return (
                       <EmployeeColumn
                         key={employee.id}
-                        employee={employee}
-                        tasks={tasks}
+                        employee={{
+                          id: employee.id,
+                          name: employee.name,
+                          position: employee.position || '',
+                        }}
+                        tasks={employeeTasks}
                         onFeedbackClick={handleFeedbackClick}
                         onViewDetails={handleViewDetails}
+                        tasksWithNewComments={tasksWithNewComments}
                       />
                     )
                   })}
@@ -247,15 +257,21 @@ export const AdminPage = () => {
       {/* Task Detail Modal */}
       {detailModal.taskId && detailModal.employeeId && (
         (() => {
-          const detailTask = mockTasks.find((t) => t.id === detailModal.taskId)
-          const detailEmployee = mockEmployees.find((e) => e.id === detailModal.employeeId)
+          const detailTask = tasks.find((t) => t.id === detailModal.taskId)
+          const detailEmployee = employees.find((e) => e.id === detailModal.employeeId)
           return detailTask && detailEmployee ? (
             <AdminTaskDetailModal
               isOpen={detailModal.isOpen}
               onClose={handleCloseDetail}
               task={detailTask}
-              employee={detailEmployee}
-              onFeedbackClick={() => handleFeedbackClick(detailTask.id, detailEmployee.id)}
+              employee={{
+                id: detailEmployee.id,
+                name: detailEmployee.name,
+                position: detailEmployee.position || '',
+              }}
+              onFeedbackClick={() =>
+                handleFeedbackClick(detailTask.id, detailEmployee.id)
+              }
             />
           ) : null
         })()
@@ -263,15 +279,33 @@ export const AdminPage = () => {
 
       {/* Feedback Write Modal */}
       {currentTask && currentEmployee && (
-        <FeedbackWriteModal
-          isOpen={feedbackModal.isOpen}
-          onClose={handleCloseFeedback}
-          task={currentTask}
-          employee={currentEmployee}
-          onSend={handleSendFeedback}
-        />
+            <FeedbackWriteModal
+              isOpen={feedbackModal.isOpen}
+              onClose={handleCloseFeedback}
+              task={currentTask}
+              employee={{
+                id: currentEmployee.id,
+                name: currentEmployee.name,
+                position: currentEmployee.position || '',
+              }}
+              onSend={handleSendFeedback}
+            />
       )}
+
+      {/* Comment List Modal */}
+      <CommentListModal
+        isOpen={commentListModal}
+        onClose={() => setCommentListModal(false)}
+        unreadCommentTasks={unreadComments}
+        adminId={user?.id}
+        onMarkAsViewed={() => {
+          // Invalidate queries to refresh unread comments count
+          queryClient.invalidateQueries({ queryKey: ['admin-unread-comments'] })
+        }}
+      />
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }
-

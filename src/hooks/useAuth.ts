@@ -14,14 +14,16 @@ export const useAuth = () => {
         } = await supabase.auth.getSession()
 
         if (session?.user) {
-          // Fetch user details from your users table
-          const { data: userData } = await supabase
-            .from('users')
+          // Fetch user details from user_profiles table
+          const { data: userData, error } = await supabase
+            .from('user_profiles')
             .select('*')
             .eq('id', session.user.id)
             .single()
 
-          if (userData) {
+          if (error) {
+            console.error('Error fetching user profile:', error)
+          } else if (userData) {
             setUser(userData)
           }
         }
@@ -39,13 +41,15 @@ export const useAuth = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        const { data: userData } = await supabase
-          .from('users')
+        const { data: userData, error } = await supabase
+          .from('user_profiles')
           .select('*')
           .eq('id', session.user.id)
           .single()
 
-        if (userData) {
+        if (error) {
+          console.error('Error fetching user profile:', error)
+        } else if (userData) {
           setUser(userData)
         }
       } else if (event === 'SIGNED_OUT') {
@@ -59,8 +63,22 @@ export const useAuth = () => {
   }, [setUser, setLoading])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    logout()
+    try {
+      console.log('Signing out from Supabase...')
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Sign out error:', error)
+        throw error
+      }
+      console.log('Supabase sign out successful')
+      logout()
+      console.log('Auth store cleared')
+    } catch (error) {
+      console.error('Error during sign out:', error)
+      // Still clear local state even if Supabase sign out fails
+      logout()
+      throw error
+    }
   }
 
   return {

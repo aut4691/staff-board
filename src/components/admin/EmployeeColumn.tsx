@@ -6,6 +6,7 @@ interface EmployeeColumnProps {
   tasks: Task[]
   onFeedbackClick: (taskId: string, employeeId: string) => void
   onViewDetails: (taskId: string, employeeId: string) => void
+  tasksWithNewComments?: Set<string>
 }
 
 export const EmployeeColumn = ({
@@ -13,6 +14,7 @@ export const EmployeeColumn = ({
   tasks,
   onFeedbackClick,
   onViewDetails,
+  tasksWithNewComments = new Set(),
 }: EmployeeColumnProps) => {
   return (
     <div className="flex flex-col min-w-[260px] sm:min-w-[280px] md:min-w-[300px] lg:min-w-[320px] flex-shrink-0">
@@ -47,6 +49,7 @@ export const EmployeeColumn = ({
                 task={task}
                 onFeedbackClick={() => onFeedbackClick(task.id, employee.id)}
                 onViewDetails={() => onViewDetails(task.id, employee.id)}
+                hasNewComment={tasksWithNewComments.has(task.id)}
               />
             ))}
           </div>

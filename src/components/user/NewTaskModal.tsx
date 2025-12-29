@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Calendar, FileText, AlertCircle } from 'lucide-react'
+import { X, Plus, Calendar, FileText, AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import type { TaskStatus, TrafficLightColor } from '@/types/index'
 
 interface NewTaskModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreateTask: (title: string, description: string, deadline: string, status: TaskStatus, trafficLight: TrafficLightColor) => void
+  onCreateTask: (title: string, description: string, deadline: string, status: TaskStatus, trafficLight: TrafficLightColor) => Promise<void>
 }
 
 export const NewTaskModal = ({
@@ -35,21 +35,26 @@ export const NewTaskModal = ({
 
   if (!isOpen) return null
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title || !deadline) {
       alert('제목과 마감일을 입력해주세요.')
       return
     }
 
-    onCreateTask(title, description, deadline, status, trafficLight)
-    
-    // Reset form
-    setTitle('')
-    setDescription('')
-    setDeadline('')
-    setStatus('todo')
-    setTrafficLight('green')
-    onClose()
+    try {
+      await onCreateTask(title, description, deadline, status, trafficLight)
+      
+      // Reset form only on success
+      setTitle('')
+      setDescription('')
+      setDeadline('')
+      setStatus('todo')
+      setTrafficLight('green')
+      onClose()
+    } catch (error) {
+      // Error is already handled in parent component
+      console.error('Error in handleSubmit:', error)
+    }
   }
 
   return (
@@ -96,7 +101,7 @@ export const NewTaskModal = ({
             </label>
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-2">
               <p className="text-xs text-indigo-800">
-                💡 <strong>작성 가이드:</strong> 업무의 주요 내용을 개조식으로 간단히 작성하세요
+                💡 <strong>작성 가이드:</strong> 주간업무 보고시 작성하는 형식 유지, 사업의 세부과제 수준으로 작성
               </p>
             </div>
             <textarea
@@ -128,27 +133,65 @@ export const NewTaskModal = ({
               <AlertCircle className="w-4 h-4" />
               우선순위
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-3">
               {[
-                { value: 'red' as TrafficLightColor, label: '긴급', icon: '🔴', color: 'border-red-400 bg-red-50 hover:bg-red-100', selectedColor: 'border-red-500 bg-red-100' },
-                { value: 'yellow' as TrafficLightColor, label: '주의', icon: '🟡', color: 'border-yellow-400 bg-yellow-50 hover:bg-yellow-100', selectedColor: 'border-yellow-500 bg-yellow-100' },
-                { value: 'green' as TrafficLightColor, label: '정상', icon: '🟢', color: 'border-green-400 bg-green-50 hover:bg-green-100', selectedColor: 'border-green-500 bg-green-100' },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setTrafficLight(option.value)}
-                  className={`p-3 rounded-xl border-2 transition-all duration-200 ${
-                    trafficLight === option.value
-                      ? `${option.selectedColor} shadow-lg transform scale-105`
-                      : option.color
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">{option.icon}</div>
-                    <span className="font-semibold text-xs">{option.label}</span>
-                  </div>
-                </button>
-              ))}
+                { 
+                  value: 'red' as TrafficLightColor, 
+                  label: '긴급', 
+                  icon: AlertCircle,
+                  borderColor: 'border-red-400',
+                  bgColor: 'bg-red-50',
+                  hoverColor: 'hover:bg-red-100',
+                  selectedBorder: 'border-red-500',
+                  selectedBg: 'bg-red-100',
+                  iconColor: 'text-red-600',
+                  shadowColor: 'shadow-red-200'
+                },
+                { 
+                  value: 'yellow' as TrafficLightColor, 
+                  label: '주의', 
+                  icon: AlertTriangle,
+                  borderColor: 'border-yellow-400',
+                  bgColor: 'bg-yellow-50',
+                  hoverColor: 'hover:bg-yellow-100',
+                  selectedBorder: 'border-yellow-500',
+                  selectedBg: 'bg-yellow-100',
+                  iconColor: 'text-yellow-600',
+                  shadowColor: 'shadow-yellow-200'
+                },
+                { 
+                  value: 'green' as TrafficLightColor, 
+                  label: '정상', 
+                  icon: CheckCircle2,
+                  borderColor: 'border-green-400',
+                  bgColor: 'bg-green-50',
+                  hoverColor: 'hover:bg-green-100',
+                  selectedBorder: 'border-green-500',
+                  selectedBg: 'bg-green-100',
+                  iconColor: 'text-green-600',
+                  shadowColor: 'shadow-green-200'
+                },
+              ].map((option) => {
+                const Icon = option.icon
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => setTrafficLight(option.value)}
+                    className={`p-3 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-2 ${
+                      trafficLight === option.value
+                        ? `${option.selectedBorder} ${option.selectedBg} ${option.shadowColor} shadow-lg transform scale-105`
+                        : `${option.borderColor} ${option.bgColor} ${option.hoverColor}`
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${option.iconColor} ${
+                      trafficLight === option.value ? 'bg-white/50' : 'bg-white/30'
+                    }`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className="font-semibold text-xs text-gray-800">{option.label}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 

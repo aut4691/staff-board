@@ -31,6 +31,50 @@
   }
 }
 
+/* Star Animation Keyframes */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(10px, -10px);
+  }
+  50% {
+    transform: translate(-5px, 5px);
+  }
+  75% {
+    transform: translate(-10px, -5px);
+  }
+}
+
+@keyframes shoot {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) rotate(-45deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(120vh) translateX(50vw) rotate(-45deg);
+  }
+}
+
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;

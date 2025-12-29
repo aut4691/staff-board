@@ -9,6 +9,10 @@ interface KanbanBoardProps {
   onViewFeedback: (taskId: string) => void
   onViewDetails: (taskId: string) => void
   onDragTask?: (taskId: string, newStatus: TaskStatus) => void
+  showStats?: boolean
+  unreadFeedbackTaskIds?: string[]
+  allFeedbackTaskIds?: string[]
+  viewedFeedbackTaskIds?: Set<string>
 }
 
 const columns: { 
@@ -43,6 +47,10 @@ export const KanbanBoard = ({
   onViewFeedback,
   onViewDetails,
   onDragTask,
+  showStats = true,
+  unreadFeedbackTaskIds = [],
+  allFeedbackTaskIds = [],
+  viewedFeedbackTaskIds = new Set(),
 }: KanbanBoardProps) => {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
 
@@ -87,34 +95,36 @@ export const KanbanBoard = ({
     <div className="flex-1 p-4 md:p-6 bg-gradient-to-br from-gray-50 to-blue-50 overflow-y-auto custom-scrollbar">
       <div className="mb-4 md:mb-6">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 md:mb-3">내 업무 목록</h2>
-        <div className="flex items-center gap-2 md:gap-3 text-sm md:text-base">
-          <span className="font-semibold text-gray-700">집중해야 할 업무:</span>
-          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-            {todayDeadline > 0 && (
-              <span className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 md:px-3 py-1 rounded-full font-medium">
-                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
-                오늘 마감 <strong>{todayDeadline}건</strong>
-              </span>
-            )}
-            {delayed > 0 && (
-              <span className="flex items-center gap-1 bg-red-100 text-red-700 px-2 md:px-3 py-1 rounded-full font-medium">
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
-                지연 <strong>{delayed}건</strong>
-              </span>
-            )}
-            {inProgressCount > 0 && (
-              <span className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 md:px-3 py-1 rounded-full font-medium">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                진행 중 <strong>{inProgressCount}건</strong>
-              </span>
-            )}
-            {todayDeadline === 0 && delayed === 0 && inProgressCount === 0 && (
-              <span className="flex items-center gap-1 text-green-600 font-medium">
-                ✨ 모든 업무가 순조롭게 진행 중입니다!
-              </span>
-            )}
+        {showStats && (
+          <div className="flex items-center gap-2 md:gap-3 text-sm md:text-base">
+            <span className="font-semibold text-gray-700">집중해야 할 업무:</span>
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+              {todayDeadline > 0 && (
+                <span className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 md:px-3 py-1 rounded-full font-medium">
+                  <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
+                  오늘 마감 <strong>{todayDeadline}건</strong>
+                </span>
+              )}
+              {delayed > 0 && (
+                <span className="flex items-center gap-1 bg-red-100 text-red-700 px-2 md:px-3 py-1 rounded-full font-medium">
+                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                  지연 <strong>{delayed}건</strong>
+                </span>
+              )}
+              {inProgressCount > 0 && (
+                <span className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 md:px-3 py-1 rounded-full font-medium">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  진행 중 <strong>{inProgressCount}건</strong>
+                </span>
+              )}
+              {todayDeadline === 0 && delayed === 0 && inProgressCount === 0 && (
+                <span className="flex items-center gap-1 text-green-600 font-medium">
+                  ✨ 모든 업무가 순조롭게 진행 중입니다!
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 min-h-[calc(100vh-240px)]">
@@ -175,8 +185,9 @@ export const KanbanBoard = ({
                         onUpdateStatus={onUpdateStatus}
                         onViewFeedback={onViewFeedback}
                         onViewDetails={onViewDetails}
-                        hasFeedback={true} // 항상 피드백 버튼 표시
-                        hasUnreadFeedback={task.id === '1'} // Mock: 첫 번째 업무에 피드백 표시
+                        hasFeedback={allFeedbackTaskIds.includes(task.id)}
+                        hasUnreadFeedback={unreadFeedbackTaskIds.includes(task.id)}
+                        isFeedbackViewed={viewedFeedbackTaskIds.has(task.id)}
                       />
                     </div>
                   ))

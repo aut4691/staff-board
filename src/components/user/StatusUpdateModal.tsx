@@ -8,6 +8,7 @@ interface StatusUpdateModalProps {
   taskTitle: string
   currentStatus: TaskStatus
   currentProgress: number
+  currentMemo?: string
   onSave: (status: TaskStatus, progress: number, memo?: string) => void
 }
 
@@ -28,11 +29,31 @@ export const StatusUpdateModal = ({
   taskTitle,
   currentStatus,
   currentProgress,
+  currentMemo = '',
   onSave,
 }: StatusUpdateModalProps) => {
   const [status, setStatus] = useState<TaskStatus>(currentStatus)
   const [progress, setProgress] = useState(currentProgress)
-  const [memo, setMemo] = useState('')
+  const [memo, setMemo] = useState(currentMemo || '')
+
+  // Update memo when currentMemo changes (when modal opens with different task)
+  useEffect(() => {
+    if (isOpen) {
+      console.log('StatusUpdateModal opened with:', {
+        currentMemo,
+        currentStatus,
+        currentProgress,
+        taskTitle,
+      })
+      // Use currentMemo if available, otherwise use empty string
+      // This ensures we always show the latest memo value
+      const memoValue = currentMemo || ''
+      setMemo(memoValue)
+      setStatus(currentStatus)
+      setProgress(currentProgress)
+      console.log('Set memo to:', memoValue)
+    }
+  }, [isOpen, currentMemo, currentStatus, currentProgress, taskTitle])
 
   // 상태가 "완료"로 변경되면 진행률을 자동으로 100%로 설정
   useEffect(() => {

@@ -22,11 +22,12 @@ export interface Task {
   id: string
   title: string
   description?: string
-  assigned_to: string
+  assigned_to: string // UUID in database
   status: TaskStatus
   progress: number
   deadline: string
   traffic_light: TrafficLightColor
+  memo?: string // Status update memo
   created_at: string
   updated_at: string
 }

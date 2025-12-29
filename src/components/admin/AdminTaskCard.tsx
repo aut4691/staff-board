@@ -1,10 +1,33 @@
 import { MessageCircle, Clock } from 'lucide-react'
-import type { Task, TrafficLightColor } from '@/types/index'
+import type { Task, TrafficLightColor, TaskStatus } from '@/types/index'
 
 interface AdminTaskCardProps {
   task: Task
   onFeedbackClick: () => void
   onViewDetails?: () => void
+  hasNewComment?: boolean
+}
+
+const getStatusLabel = (status: TaskStatus) => {
+  switch (status) {
+    case 'todo': return '할 일'
+    case 'in_progress': return '진행 중'
+    case 'completed': return '완료'
+    default: return status
+  }
+}
+
+const getStatusBadge = (status: TaskStatus) => {
+  switch (status) {
+    case 'todo':
+      return 'bg-gray-100 text-gray-700 border-gray-300'
+    case 'in_progress':
+      return 'bg-blue-100 text-blue-700 border-blue-300'
+    case 'completed':
+      return 'bg-green-100 text-green-700 border-green-300'
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-300'
+  }
 }
 
 const getStatusColor = (color: TrafficLightColor) => {
@@ -20,12 +43,6 @@ const getStatusColor = (color: TrafficLightColor) => {
   }
 }
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  return `${month}/${day}`
-}
 
 const getDaysRemaining = (deadline: string) => {
   const today = new Date()
@@ -35,9 +52,15 @@ const getDaysRemaining = (deadline: string) => {
   return diffDays
 }
 
-export const AdminTaskCard = ({ task, onFeedbackClick, onViewDetails }: AdminTaskCardProps) => {
+export const AdminTaskCard = ({ task, onFeedbackClick, onViewDetails, hasNewComment = false }: AdminTaskCardProps) => {
   const statusColor = getStatusColor(task.traffic_light)
   const daysRemaining = getDaysRemaining(task.deadline)
+  const statusLabel = getStatusLabel(task.status)
+  const statusBadge = getStatusBadge(task.status)
+
+  // 오늘 할일(예정) 체크
+  const today = new Date().toISOString().split('T')[0]
+  const isTodayDeadline = task.deadline === today && task.status === 'todo'
 
   return (
     <div
@@ -51,6 +74,16 @@ export const AdminTaskCard = ({ task, onFeedbackClick, onViewDetails }: AdminTas
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            {/* Status Badge */}
+            <span className={`text-xs px-2 py-0.5 rounded-lg font-bold border ${statusBadge} shadow-sm`}>
+              {statusLabel}
+            </span>
+            {/* Today Deadline Badge */}
+            {isTodayDeadline && (
+              <span className="text-xs px-2 py-0.5 rounded-lg font-bold bg-yellow-100 text-yellow-700 border border-yellow-300 shadow-sm">
+                오늘 할일
+              </span>
+            )}
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <Clock className="w-3 h-3" />
               <span
@@ -87,7 +120,11 @@ export const AdminTaskCard = ({ task, onFeedbackClick, onViewDetails }: AdminTas
           e.stopPropagation()
           onFeedbackClick()
         }}
-        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium text-sm"
+        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium text-sm ${
+          hasNewComment
+            ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
+            : 'bg-gradient-to-r from-gray-400 to-gray-500'
+        }`}
       >
         <MessageCircle className="w-4 h-4" />
         <span>피드백</span>
