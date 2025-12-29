@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { UserPage } from './pages/UserPage'
+import { AdminPage } from './pages/AdminPage'
 
 function App() {
   return (
@@ -7,7 +8,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/user" replace />} />
         <Route path="/user" element={<UserPage />} />
-        {/* Admin page will be added later */}
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="*" element={<Navigate to="/user" replace />} />
       </Routes>
     </BrowserRouter>
