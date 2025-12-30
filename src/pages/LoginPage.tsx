@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { LogIn, Mail, Lock, UserPlus, User, X, Sparkles } from 'lucide-react'
 import { Footer } from '@/components/layout/Footer'
+import { useAuthStore } from '@/stores/authStore'
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('')
@@ -163,23 +164,37 @@ export const LoginPage = () => {
           // Continue with login even if save fails
         }
 
-        // Fetch user profile to check role
+        // Fetch full user profile and set it in auth store
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
-          .select('role')
+          .select('*')
           .eq('id', data.user.id)
           .single()
 
         if (profileError) {
           console.error('Profile fetch error:', profileError)
-          // Still allow login even if profile fetch fails
+          setError('사용자 정보를 불러올 수 없습니다.')
+          setLoading(false)
+          return
         }
 
+        if (!profile) {
+          setError('사용자 프로필을 찾을 수 없습니다.')
+          setLoading(false)
+          return
+        }
+
+        // Set user in auth store manually to avoid waiting for onAuthStateChange
+        useAuthStore.getState().setUser(profile)
+        useAuthStore.getState().setLoading(false)
+
+        console.log('User set in auth store, navigating...', profile.role)
+
         // Navigate based on role
-        if (profile?.role === 'admin') {
-          navigate('/admin')
+        if (profile.role === 'admin') {
+          navigate('/admin', { replace: true })
         } else {
-          navigate('/user')
+          navigate('/user', { replace: true })
         }
       }
     } catch (err: any) {
@@ -612,7 +627,7 @@ export const LoginPage = () => {
                 💡 <strong>안내:</strong> 회원가입 후 이메일 인증이 필요합니다.
               </p>
               <p className="text-xs text-blue-600 mt-2">
-                🔨 Made by Kim Keun Wook (Kay)
+                🔨 센터외 인원은 회원가입 불가능합니다.
               </p>
             </div>
           </div>

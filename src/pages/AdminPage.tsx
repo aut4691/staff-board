@@ -12,6 +12,7 @@ import { EmployeeColumn } from '@/components/admin/EmployeeColumn'
 import { FeedbackWriteModal } from '@/components/admin/FeedbackWriteModal'
 import { AdminTaskDetailModal } from '@/components/admin/AdminTaskDetailModal'
 import { StatisticsView } from '@/components/admin/StatisticsView'
+import { EmployeeManagementView } from '@/components/admin/EmployeeManagementView'
 import { CommentListModal } from '@/components/admin/CommentListModal'
 import type { Task } from '@/types/index'
 
@@ -42,7 +43,9 @@ export const AdminPage = () => {
   // Filter tasks based on selected filter
   const filteredTasks = useMemo(() => {
     let filtered = [...tasks]
-    const today = new Date().toISOString().split('T')[0]
+    // Get today's date in local timezone (YYYY-MM-DD format)
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
     switch (selectedFilter) {
       case 'today':
@@ -64,7 +67,9 @@ export const AdminPage = () => {
 
   // Task counts for sidebar
   const taskCounts = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0]
+    // Get today's date in local timezone (YYYY-MM-DD format)
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     return {
       all: tasks.length,
       today: tasks.filter((t) => t.deadline === today).length,
@@ -91,10 +96,6 @@ export const AdminPage = () => {
     return grouped
   }, [filteredTasks, filteredEmployees])
 
-  // Get tasks with new comments
-  const tasksWithNewComments = useMemo(() => {
-    return new Set(unreadComments.map((item) => item.task_id))
-  }, [unreadComments])
 
   const handleFeedbackClick = (taskId: string, employeeId: string) => {
     setDetailModal({ isOpen: false, taskId: null, employeeId: null })
@@ -157,10 +158,16 @@ export const AdminPage = () => {
   // Loading state
   if (authLoading || tasksLoading || employeesLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">로딩 중...</p>
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        <div className="text-center relative z-10">
+          <div className="bg-white/20 backdrop-blur-xl rounded-full p-4 border border-white/30 shadow-2xl mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/80"></div>
+          </div>
+          <p className="text-white/90 drop-shadow-md">로딩 중...</p>
         </div>
       </div>
     )
@@ -169,46 +176,56 @@ export const AdminPage = () => {
   // Not authenticated or not admin
   if (!user || user.role !== 'admin') {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">
-            관리자 권한이 필요합니다.
-          </p>
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        <div className="text-center relative z-10">
+          <div className="bg-white/20 backdrop-blur-xl rounded-2xl p-8 border border-white/30 shadow-2xl">
+            <p className="text-white/90 mb-4 drop-shadow-md">
+              관리자 권한이 필요합니다.
+            </p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 relative">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-300/20 rounded-full blur-3xl animate-pulse delay-500"></div>
+      </div>
+      
       {/* Header */}
-      <Header
-        userName="관리자 대시보드"
-        hasNewFeedback={unreadComments.length > 0}
-        feedbackCount={unreadComments.length}
-        onNotificationClick={() => {
-          if (unreadComments.length > 0) {
-            // Open comment list modal
-            setCommentListModal(true)
-          }
-        }}
-        onProfileClick={() => navigate('/profile')}
+      <div className="relative z-10">
+        <Header
+          userName="관리자 대시보드"
+          onProfileClick={() => navigate('/profile')}
         onLogoutClick={async () => {
           if (window.confirm('로그아웃 하시겠습니까?')) {
             try {
               await signOut()
+              // Clear any cached data
+              queryClient.clear()
+              // Navigate to login page
               navigate('/login', { replace: true })
-              window.location.href = '/login'
             } catch (error) {
               console.error('Logout error:', error)
-              alert('로그아웃 중 오류가 발생했습니다.')
+              // Even if there's an error, navigate to login
+              navigate('/login', { replace: true })
             }
           }
         }}
-      />
+        />
+      </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden relative min-h-0">
+      <div className="flex flex-1 overflow-hidden relative min-h-0 z-10">
         {/* Sidebar */}
         <AdminSidebar
           selectedFilter={selectedFilter}
@@ -218,12 +235,14 @@ export const AdminPage = () => {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-gray-50 to-blue-50 overflow-y-auto custom-scrollbar min-h-0">
+          <div className="p-3 sm:p-4 md:p-6 overflow-y-auto custom-scrollbar min-h-0">
             {selectedFilter === 'statistics' ? (
               <StatisticsView tasks={tasks} employees={employees} />
+            ) : selectedFilter === 'employee-management' ? (
+              <EmployeeManagementView />
             ) : (
               <>
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-3 sm:mb-4 md:mb-6">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-3 sm:mb-4 md:mb-6 drop-shadow-md">
                   직원별 업무 현황 보드
                 </h2>
 
@@ -243,7 +262,6 @@ export const AdminPage = () => {
                         tasks={employeeTasks}
                         onFeedbackClick={handleFeedbackClick}
                         onViewDetails={handleViewDetails}
-                        tasksWithNewComments={tasksWithNewComments}
                       />
                     )
                   })}

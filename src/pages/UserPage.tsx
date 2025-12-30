@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTasks, useUpdateTask, useCreateTask, useDeleteTask } from '@/hooks/useTasks'
-import { useUnreadFeedbacks, useAllFeedbacks, useMarkFeedbackRead } from '@/hooks/useFeedbacks'
+import { useUnreadFeedbacks, useMarkFeedbackRead } from '@/hooks/useFeedbacks'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Sidebar } from '@/components/layout/Sidebar'
-import { FeedbackBanner } from '@/components/user/FeedbackBanner'
 import { KanbanBoard } from '@/components/user/KanbanBoard'
 import { FeedbackModal } from '@/components/user/FeedbackModal'
 import { FeedbackListModal } from '@/components/user/FeedbackListModal'
@@ -23,14 +22,12 @@ export const UserPage = () => {
   const queryClient = useQueryClient()
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(user?.id, false)
   const { data: unreadFeedbacks = [] } = useUnreadFeedbacks(user?.id || '')
-  const { data: allFeedbacks = [] } = useAllFeedbacks(user?.id || '')
   const updateTask = useUpdateTask()
   const createTask = useCreateTask()
   const deleteTask = useDeleteTask()
   const markFeedbackRead = useMarkFeedbackRead()
 
   const [selectedMenu, setSelectedMenu] = useState('all')
-  const [showFeedbackBanner, setShowFeedbackBanner] = useState(unreadFeedbacks.length > 0)
 
   // Modal states
   const [feedbackModal, setFeedbackModal] = useState<{
@@ -49,29 +46,14 @@ export const UserPage = () => {
   }>({ isOpen: false, taskId: null })
 
   const [newTaskModal, setNewTaskModal] = useState(false)
-  const [viewedFeedbackTaskIds, setViewedFeedbackTaskIds] = useState<Set<string>>(new Set())
   const [feedbackListModal, setFeedbackListModal] = useState(false)
 
-  // Update feedback banner when unread feedbacks change
-  useEffect(() => {
-    setShowFeedbackBanner(unreadFeedbacks.length > 0)
-  }, [unreadFeedbacks.length])
-
-  // Initialize viewed feedback task IDs from all feedbacks (read feedbacks)
-  useEffect(() => {
-    const readFeedbackTaskIds = new Set(
-      allFeedbacks
-        .filter(f => f.is_read)
-        .map(f => f.task_id)
-    )
-    if (readFeedbackTaskIds.size > 0) {
-      setViewedFeedbackTaskIds(prev => new Set([...prev, ...readFeedbackTaskIds]))
-    }
-  }, [allFeedbacks])
 
   // Filter tasks based on selected menu
   const filteredTasks = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0]
+    // Get today's date in local timezone (YYYY-MM-DD format)
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
     switch (selectedMenu) {
       case 'today':
@@ -88,7 +70,9 @@ export const UserPage = () => {
 
   // Task counts for sidebar
   const taskCounts = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0]
+    // Get today's date in local timezone (YYYY-MM-DD format)
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     return {
       all: tasks.length,
       today: tasks.filter((t) => t.deadline === today).length,
@@ -106,8 +90,6 @@ export const UserPage = () => {
   const handleViewFeedback = (taskId: string) => {
     setDetailModal({ isOpen: false, taskId: null })
     setFeedbackModal({ isOpen: true, taskId })
-    // Mark feedback as viewed when opening modal
-    setViewedFeedbackTaskIds(prev => new Set([...prev, taskId]))
   }
 
   const handleViewDetails = (taskId: string) => {
@@ -127,21 +109,59 @@ export const UserPage = () => {
   }
 
   const handleSaveStatus = async (
+    title: string,
     status: TaskStatus,
     progress: number,
+    deadline: string,
     memo?: string
-  ) => {
-    if (statusModal.taskId) {
+  ): Promise<void> => {
+    if (!statusModal.taskId) {
+      console.error('No task ID for status update')
+      throw new Error('업무 ID가 없습니다.')
+    }
+
+    console.log('Saving status update:', {
+      taskId: statusModal.taskId,
+      title,
+      status,
+      progress,
+      deadline,
+      memo,
+    })
+
+    // Ensure progress is valid
+    const finalProgress = status === 'completed' ? 100 : Math.max(0, Math.min(100, progress))
+    
+    // Calculate traffic light based on deadline
+    const today = new Date()
+    const deadlineDate = new Date(deadline)
+    const diffTime = deadlineDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    let trafficLight: TrafficLightColor = 'green'
+    if (diffDays < 0 || diffDays <= 3) trafficLight = 'red'
+    else if (diffDays <= 7) trafficLight = 'yellow'
+    
+    try {
       await updateTask.mutateAsync({
         taskId: statusModal.taskId,
         updates: {
+          title: title.trim(),
           status,
-          progress: status === 'completed' ? 100 : progress,
+          progress: finalProgress,
+          deadline,
+          traffic_light: trafficLight,
           ...(memo?.trim() ? { memo: memo.trim() } : {}),
           updated_at: new Date().toISOString(),
         },
       })
+      
+      console.log('Status update saved successfully')
       setStatusModal({ isOpen: false, taskId: null })
+    } catch (error: any) {
+      console.error('Error saving status update:', error)
+      alert(`상태 업데이트에 실패했습니다: ${error?.message || '알 수 없는 오류'}`)
+      throw error // Re-throw to let modal handle it
     }
   }
 
@@ -152,18 +172,20 @@ export const UserPage = () => {
       if (feedbackToMark) {
         await markFeedbackRead.mutateAsync(feedbackToMark.id)
       }
-      // Mark feedback task as viewed when confirmed
-      setViewedFeedbackTaskIds(prev => new Set([...prev, feedbackModal.taskId!]))
     }
     
     setFeedbackModal({ isOpen: false, taskId: null })
-    setShowFeedbackBanner(false)
   }
 
   const handleDeleteTask = async (taskId: string) => {
-    if (confirm('정말 이 업무를 삭제하시겠습니까?')) {
+    try {
+      console.log('Deleting task:', taskId)
       await deleteTask.mutateAsync(taskId)
+      console.log('Task deleted successfully')
       setDetailModal({ isOpen: false, taskId: null })
+    } catch (error: any) {
+      console.error('Error deleting task:', error)
+      alert(`업무 삭제에 실패했습니다: ${error?.message || '알 수 없는 오류'}`)
     }
   }
 
@@ -253,10 +275,16 @@ export const UserPage = () => {
   // Loading state
   if (authLoading || tasksLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">로딩 중...</p>
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        <div className="text-center relative z-10">
+          <div className="bg-white/20 backdrop-blur-xl rounded-full p-4 border border-white/30 shadow-2xl mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/80"></div>
+          </div>
+          <p className="text-white/90 drop-shadow-md">로딩 중...</p>
         </div>
       </div>
     )
@@ -265,63 +293,63 @@ export const UserPage = () => {
   // Not authenticated
   if (!user) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">로그인이 필요합니다.</p>
-          <button
-            onClick={() => {
-              // TODO: Implement login
-              console.log('Login required')
-            }}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-          >
-            로그인
-          </button>
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        <div className="text-center relative z-10">
+          <div className="bg-white/20 backdrop-blur-xl rounded-2xl p-8 border border-white/30 shadow-2xl">
+            <p className="text-white/90 mb-4 drop-shadow-md">로그인이 필요합니다.</p>
+            <button
+              onClick={() => {
+                // TODO: Implement login
+                console.log('Login required')
+              }}
+              className="px-6 py-2 bg-indigo-500/80 backdrop-blur-md text-white rounded-lg hover:bg-indigo-600/80 border border-white/30 shadow-lg transition-all"
+            >
+              로그인
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 relative">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-300/30 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-300/20 rounded-full blur-3xl animate-pulse delay-500"></div>
+      </div>
+      
       {/* Header */}
-      <Header
-        userName={user.name}
-        hasNewFeedback={unreadFeedbacks.length > 0}
-        feedbackCount={unreadFeedbacks.length}
-        onNotificationClick={() => {
-          if (unreadFeedbacks.length > 0) {
-            setFeedbackListModal(true)
-          }
-        }}
-        onProfileClick={() => navigate('/profile')}
-        onLogoutClick={async () => {
-          if (window.confirm('로그아웃 하시겠습니까?')) {
-            try {
-              await signOut()
-              navigate('/login', { replace: true })
-              window.location.href = '/login'
-            } catch (error) {
-              console.error('Logout error:', error)
-              alert('로그아웃 중 오류가 발생했습니다.')
+      <div className="relative z-10">
+        <Header
+          userName={user.name}
+          onProfileClick={() => navigate('/profile')}
+          onLogoutClick={async () => {
+            if (window.confirm('로그아웃 하시겠습니까?')) {
+              try {
+                await signOut()
+                // Clear any cached data
+                queryClient.clear()
+                // Navigate to login page
+                navigate('/login', { replace: true })
+              } catch (error) {
+                console.error('Logout error:', error)
+                // Even if there's an error, navigate to login
+                navigate('/login', { replace: true })
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
+      </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden relative min-h-0">
-        {/* Feedback Banner - Now positioned fixed in top-right */}
-        {showFeedbackBanner && unreadFeedbacks.length > 0 && (
-          <FeedbackBanner
-            onClose={() => setShowFeedbackBanner(false)}
-            onClick={() => {
-              if (unreadFeedbacks.length > 0) {
-                handleViewFeedback(unreadFeedbacks[0].task_id)
-              }
-            }}
-          />
-        )}
+      <div className="flex flex-1 overflow-hidden relative min-h-0 z-10">
         {/* Sidebar */}
         <Sidebar
           selectedMenu={selectedMenu}
@@ -338,18 +366,16 @@ export const UserPage = () => {
             onViewDetails={handleViewDetails}
             onDragTask={handleDragTask}
             showStats={selectedMenu === 'all'}
-            unreadFeedbackTaskIds={unreadFeedbacks.map(f => f.task_id)}
-            allFeedbackTaskIds={[...new Set(allFeedbacks.map(f => f.task_id))]}
-            viewedFeedbackTaskIds={viewedFeedbackTaskIds}
+            selectedMenu={selectedMenu}
           />
 
           {/* Floating Add Button */}
           <button
             onClick={() => setNewTaskModal(true)}
-            className="fixed bottom-24 right-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-2xl shadow-lg hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 z-40 flex items-center gap-2 group"
+            className="fixed bottom-24 right-6 bg-gradient-to-r from-purple-500/80 to-indigo-500/80 backdrop-blur-xl text-white p-3 rounded-2xl shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 z-40 flex items-center gap-2 group border border-white/30"
             title="새 업무 등록"
           >
-            <div className="bg-white/20 p-1.5 rounded-lg group-hover:bg-white/30 transition-all duration-300">
+            <div className="bg-white/30 backdrop-blur-md p-1.5 rounded-lg group-hover:bg-white/40 transition-all duration-300 border border-white/20">
               <Plus className="w-5 h-5" />
             </div>
             <span className="hidden sm:inline font-semibold text-sm pr-1">새 업무</span>
@@ -365,6 +391,7 @@ export const UserPage = () => {
           taskTitle={currentTask.title}
           currentStatus={currentTask.status}
           currentProgress={currentTask.progress}
+          currentDeadline={currentTask.deadline}
           currentMemo={currentTask.memo || currentTask.description || ''}
           onSave={handleSaveStatus}
         />

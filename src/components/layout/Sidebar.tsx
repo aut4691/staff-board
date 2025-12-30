@@ -31,7 +31,7 @@ export const Sidebar = ({ selectedMenu, onMenuChange, taskCounts }: SidebarProps
   }
 
   return (
-    <aside className="w-56 md:w-64 bg-gradient-to-b from-gray-50 to-gray-100 border-r border-gray-200 flex flex-col shadow-inner">
+    <aside className="w-56 md:w-64 bg-white/20 backdrop-blur-xl border-r border-white/30 flex flex-col shadow-2xl">
       <nav className="flex-1 p-3 md:p-4 overflow-y-auto custom-scrollbar">
         <ul className="space-y-2">
           {menuItems.map((item) => {
@@ -43,23 +43,23 @@ export const Sidebar = ({ selectedMenu, onMenuChange, taskCounts }: SidebarProps
               <li key={item.id}>
                 <button
                   onClick={() => onMenuChange(item.id)}
-                  className={`w-full text-left px-3 md:px-4 py-2 md:py-3 rounded-xl transition-all duration-200 flex items-center justify-between group ${
+                  className={`w-full text-left px-3 md:px-4 py-2 md:py-3 rounded-xl transition-all duration-200 flex items-center justify-between group backdrop-blur-md border ${
                     isSelected
-                      ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-lg transform scale-105'
-                      : 'hover:bg-white hover:shadow-md hover:transform hover:scale-102'
+                      ? 'bg-gradient-to-r from-indigo-500/90 to-blue-500/90 text-white shadow-2xl transform scale-105 border-white/40'
+                      : 'bg-white/30 hover:bg-white/40 hover:shadow-lg hover:transform hover:scale-102 border-white/30 text-gray-800'
                   }`}
                 >
                   <div className="flex items-center gap-2 md:gap-3">
-                    <Icon className={`w-4 h-4 md:w-5 md:h-5 ${isSelected ? 'text-white' : 'text-gray-600 group-hover:text-indigo-600'}`} />
-                    <span className={`font-medium text-sm md:text-base ${isSelected ? 'text-white' : 'text-gray-700'}`}>
+                    <Icon className={`w-4 h-4 md:w-5 md:h-5 ${isSelected ? 'text-white' : 'text-gray-700 group-hover:text-indigo-600'}`} />
+                    <span className={`font-medium text-sm md:text-base ${isSelected ? 'text-white' : 'text-gray-800'}`}>
                       {item.label}
                     </span>
                   </div>
                   {count > 0 && (
-                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                    <span className={`text-xs px-2 py-1 rounded-full font-semibold backdrop-blur-md ${
                       isSelected 
-                        ? 'bg-white/30 text-white' 
-                        : 'bg-indigo-100 text-indigo-600 group-hover:bg-indigo-500 group-hover:text-white'
+                        ? 'bg-white/40 text-white border border-white/30' 
+                        : 'bg-indigo-500/80 text-white border border-indigo-400/50 group-hover:bg-indigo-600/80'
                     }`}>
                       {count}
                     </span>

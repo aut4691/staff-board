@@ -6,7 +6,6 @@ interface EmployeeColumnProps {
   tasks: Task[]
   onFeedbackClick: (taskId: string, employeeId: string) => void
   onViewDetails: (taskId: string, employeeId: string) => void
-  tasksWithNewComments?: Set<string>
 }
 
 export const EmployeeColumn = ({
@@ -14,19 +13,18 @@ export const EmployeeColumn = ({
   tasks,
   onFeedbackClick,
   onViewDetails,
-  tasksWithNewComments = new Set(),
 }: EmployeeColumnProps) => {
   return (
     <div className="flex flex-col min-w-[260px] sm:min-w-[280px] md:min-w-[300px] lg:min-w-[320px] flex-shrink-0">
       {/* Column Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-t-xl px-4 md:px-5 py-3 md:py-4 shadow-lg mb-4">
+      <div className="bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-xl rounded-t-xl px-4 md:px-5 py-3 md:py-4 shadow-2xl mb-4 border border-white/20">
         <div className="text-white">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-base md:text-lg">
+            <h3 className="font-bold text-base md:text-lg drop-shadow-md">
               {employee.name}
             </h3>
             {employee.position && (
-              <span className="text-xs md:text-sm bg-white/20 px-2 py-1 rounded-full">
+              <span className="text-xs md:text-sm bg-white/40 backdrop-blur-md px-2 py-1 rounded-full border border-white/30 shadow-lg">
                 {employee.position}
               </span>
             )}
@@ -35,9 +33,9 @@ export const EmployeeColumn = ({
       </div>
 
       {/* Column Content */}
-      <div className="flex-1 bg-white/50 backdrop-blur-sm rounded-b-xl p-3 md:p-4 overflow-y-auto border-2 border-t-0 border-gray-200 custom-scrollbar min-h-[calc(100vh-300px)] max-h-[calc(100vh-300px)]">
+      <div className="flex-1 bg-white/20 backdrop-blur-xl rounded-b-xl p-3 md:p-4 overflow-y-auto border-2 border-t-0 border-white/30 custom-scrollbar min-h-[calc(100vh-300px)] max-h-[calc(100vh-300px)] shadow-2xl">
         {tasks.length === 0 ? (
-          <div className="text-center text-gray-400 text-sm mt-8">
+          <div className="text-center text-gray-500 text-sm mt-8">
             <div className="text-4xl mb-2">📭</div>
             <p>업무가 없습니다</p>
           </div>
@@ -49,7 +47,6 @@ export const EmployeeColumn = ({
                 task={task}
                 onFeedbackClick={() => onFeedbackClick(task.id, employee.id)}
                 onViewDetails={() => onViewDetails(task.id, employee.id)}
-                hasNewComment={tasksWithNewComments.has(task.id)}
               />
             ))}
           </div>

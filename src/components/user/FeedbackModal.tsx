@@ -201,31 +201,31 @@ export const FeedbackModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full h-[90vh] max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300">
+      <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full h-[90vh] max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300 border border-white/40">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-500 px-5 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl flex-shrink-0">
+        <div className="bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-xl px-5 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl flex-shrink-0 border-b border-white/20">
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="bg-white/20 p-2 rounded-lg">
-              <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-white" />
+            <div className="bg-white/30 backdrop-blur-md p-2 rounded-lg border border-white/20">
+              <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-md" />
             </div>
-            <h3 className="text-lg md:text-xl font-bold text-white">센터장님 피드백</h3>
+            <h3 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">센터장님 피드백</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full transition-all duration-200"
+            className="p-2 hover:bg-white/30 backdrop-blur-md rounded-full transition-all duration-200 border border-white/20"
             aria-label="닫기"
           >
-            <X className="w-5 h-5 md:w-6 md:h-6 text-white" />
+            <X className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-md" />
           </button>
         </div>
 
         {/* Content - Scrollable */}
         <div className="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar min-h-0 space-y-4" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           {/* Task Name */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4">
+          <div className="bg-gradient-to-br from-blue-100/60 to-indigo-100/60 backdrop-blur-md rounded-xl p-4 border border-white/40 shadow-lg">
             <div className="flex items-center gap-2 mb-1">
-              <FileText className="w-4 h-4 text-gray-600" />
-              <span className="text-xs text-gray-600 font-medium">업무명</span>
+              <FileText className="w-4 h-4 text-gray-700" />
+              <span className="text-xs text-gray-700 font-medium">업무명</span>
             </div>
             <p className="font-bold text-gray-900 text-base md:text-lg">{taskTitle}</p>
           </div>
@@ -241,10 +241,10 @@ export const FeedbackModal = ({
                 {chatMessages.map((message) => (
                   <div
                     key={message.id}
-                    className={`rounded-lg p-3 border ${
+                    className={`rounded-lg p-3 border backdrop-blur-md shadow-lg ${
                       message.type === 'feedback'
-                        ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
-                        : 'bg-gradient-to-br from-gray-50 to-blue-50 border-gray-200'
+                        ? 'bg-gradient-to-br from-blue-100/60 to-indigo-100/60 border-blue-300/50'
+                        : 'bg-gradient-to-br from-white/50 to-blue-50/60 border-white/40'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -312,7 +312,7 @@ export const FeedbackModal = ({
           ) : feedbackMessage ? (
             // Fallback: Show feedback message if no feedbacks loaded yet
             <div className="border-t-2 border-gray-200 pt-4">
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 rounded-lg p-3 border">
+              <div className="bg-gradient-to-br from-blue-100/60 to-indigo-100/60 backdrop-blur-md border-blue-300/50 rounded-lg p-3 border shadow-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center bg-gradient-to-r from-indigo-600 to-blue-600">
                     <span className="text-white text-xs font-bold">
@@ -342,8 +342,8 @@ export const FeedbackModal = ({
 
           {/* Comment Input */}
           {!currentFeedbackId ? (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-              <p className="text-sm text-yellow-700 font-medium">
+            <div className="bg-yellow-100/60 backdrop-blur-md border border-yellow-300/50 rounded-lg p-4 text-center shadow-lg">
+              <p className="text-sm text-yellow-800 font-medium">
                 💡 관리자가 먼저 피드백을 작성해야 댓글을 달 수 있습니다.
               </p>
             </div>
@@ -359,14 +359,14 @@ export const FeedbackModal = ({
                   onChange={(e) => setNewComment(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="댓글을 입력하세요... (Enter: 전송, Shift+Enter: 줄바꿈)"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar pr-14"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar pr-14 bg-white/80 backdrop-blur-sm"
                   rows={3}
                   disabled={!canAddComment}
                 />
                 <button
                   onClick={handleAddComment}
                   disabled={!newComment.trim() || !canAddComment}
-                  className="absolute right-3 bottom-3 bg-gradient-to-r from-indigo-600 to-blue-500 text-white p-2.5 rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none group"
+                  className="absolute right-3 bottom-3 bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-md text-white p-2.5 rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none group border border-white/30"
                   title="댓글 작성"
                 >
                   <Send className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
@@ -374,8 +374,8 @@ export const FeedbackModal = ({
               </div>
             </div>
           ) : (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-              <p className="text-sm text-orange-700 font-medium">
+            <div className="bg-orange-100/60 backdrop-blur-md border border-orange-300/50 rounded-lg p-3 text-center shadow-lg">
+              <p className="text-sm text-orange-800 font-medium">
                 ⚠️ 최대 {MAX_COMMENTS}개까지만 댓글을 작성할 수 있습니다.
               </p>
             </div>
@@ -383,16 +383,16 @@ export const FeedbackModal = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t bg-gray-50 px-4 md:px-6 py-3 md:py-4 flex justify-end gap-2 md:gap-3 rounded-b-2xl flex-shrink-0">
+        <div className="border-t border-white/40 bg-white/40 backdrop-blur-xl px-4 md:px-6 py-3 md:py-4 flex justify-end gap-2 md:gap-3 rounded-b-2xl flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200 font-medium"
+            className="px-6 py-2 border-2 border-white/40 bg-white/20 backdrop-blur-md text-gray-700 rounded-lg hover:bg-white/30 transition-all duration-200 font-medium shadow-lg"
           >
             나중에
           </button>
           <button
             onClick={onConfirm}
-            className="px-8 py-2 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-bold flex items-center gap-2"
+            className="px-8 py-2 bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-md text-white rounded-lg hover:shadow-lg transition-all duration-200 font-bold flex items-center gap-2 border border-white/30 shadow-lg"
           >
             확인했습니다
           </button>

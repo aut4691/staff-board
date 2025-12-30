@@ -5,12 +5,11 @@ interface AdminTaskCardProps {
   task: Task
   onFeedbackClick: () => void
   onViewDetails?: () => void
-  hasNewComment?: boolean
 }
 
 const getStatusLabel = (status: TaskStatus) => {
   switch (status) {
-    case 'todo': return '할 일'
+    case 'todo': return '준비업무'
     case 'in_progress': return '진행 중'
     case 'completed': return '완료'
     default: return status
@@ -52,20 +51,22 @@ const getDaysRemaining = (deadline: string) => {
   return diffDays
 }
 
-export const AdminTaskCard = ({ task, onFeedbackClick, onViewDetails, hasNewComment = false }: AdminTaskCardProps) => {
+export const AdminTaskCard = ({ task, onFeedbackClick, onViewDetails }: AdminTaskCardProps) => {
   const statusColor = getStatusColor(task.traffic_light)
   const daysRemaining = getDaysRemaining(task.deadline)
   const statusLabel = getStatusLabel(task.status)
   const statusBadge = getStatusBadge(task.status)
 
-  // 오늘 할일(예정) 체크
-  const today = new Date().toISOString().split('T')[0]
+  // 오늘 준비업무(예정) 체크
+  // Get today's date in local timezone (YYYY-MM-DD format)
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const isTodayDeadline = task.deadline === today && task.status === 'todo'
 
   return (
     <div
       onClick={onViewDetails}
-      className="bg-white rounded-xl border-2 p-3 md:p-4 hover:shadow-xl transition-all duration-300 group border-gray-200 hover:border-indigo-300 cursor-pointer"
+      className="bg-white/50 backdrop-blur-xl rounded-xl border-2 p-3 md:p-4 hover:shadow-2xl transition-all duration-300 group border-white/40 hover:border-indigo-300/50 cursor-pointer shadow-lg"
     >
       {/* Card Header */}
       <div className="flex items-start gap-2 md:gap-3 mb-3">
@@ -81,7 +82,7 @@ export const AdminTaskCard = ({ task, onFeedbackClick, onViewDetails, hasNewComm
             {/* Today Deadline Badge */}
             {isTodayDeadline && (
               <span className="text-xs px-2 py-0.5 rounded-lg font-bold bg-yellow-100 text-yellow-700 border border-yellow-300 shadow-sm">
-                오늘 할일
+                오늘 준비업무
               </span>
             )}
             <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -120,11 +121,7 @@ export const AdminTaskCard = ({ task, onFeedbackClick, onViewDetails, hasNewComm
           e.stopPropagation()
           onFeedbackClick()
         }}
-        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium text-sm ${
-          hasNewComment
-            ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
-            : 'bg-gradient-to-r from-gray-400 to-gray-500'
-        }`}
+        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium text-sm backdrop-blur-md border border-white/30 bg-gradient-to-r from-blue-500/80 to-indigo-500/80"
       >
         <MessageCircle className="w-4 h-4" />
         <span>피드백</span>

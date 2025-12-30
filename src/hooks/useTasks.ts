@@ -38,6 +38,18 @@ export const useUpdateTask = () => {
 
   return useMutation({
     mutationFn: async ({ taskId, updates }: { taskId: string; updates: Partial<Task> }) => {
+      console.log('Updating task:', { taskId, updates })
+      
+      // Ensure progress is a number and within valid range
+      if (updates.progress !== undefined) {
+        updates.progress = Math.max(0, Math.min(100, Number(updates.progress)))
+      }
+      
+      // Ensure updated_at is set
+      if (!updates.updated_at) {
+        updates.updated_at = new Date().toISOString()
+      }
+
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -45,11 +57,29 @@ export const useUpdateTask = () => {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error updating task:', error)
+        throw error
+      }
+      
+      if (!data) {
+        throw new Error('Task update returned no data')
+      }
+      
+      console.log('Task updated successfully:', data)
       return data
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      console.log('Invalidating queries after task update')
+      // Invalidate all task queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      // Also update the cache optimistically
+      queryClient.setQueryData(['tasks'], (oldData: Task[] | undefined) => {
+        if (!oldData) return oldData
+        return oldData.map((task) =>
+          task.id === variables.taskId ? { ...task, ...variables.updates } : task
+        )
+      })
     },
   })
 }
@@ -159,12 +189,76 @@ export const useDeleteTask = () => {
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+      console.log('Deleting task via Supabase:', taskId)
+      
+      // Get current user to verify ownership
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('로그인이 필요합니다.')
+      }
 
-      if (error) throw error
+      // First, verify the task exists and check ownership
+      const { data: taskData, error: fetchError } = await supabase
+        .from('tasks')
+        .select('id, title, assigned_to')
+        .eq('id', taskId)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching task before deletion:', fetchError)
+        throw new Error(`업무를 찾을 수 없습니다: ${fetchError.message}`)
+      }
+
+      if (!taskData) {
+        throw new Error('삭제할 업무를 찾을 수 없습니다.')
+      }
+
+      // Verify ownership
+      if (taskData.assigned_to !== user.id) {
+        console.error('User does not own this task:', {
+          taskAssignedTo: taskData.assigned_to,
+          currentUserId: user.id
+        })
+        throw new Error('삭제 권한이 없습니다. 자신의 업무만 삭제할 수 있습니다.')
+      }
+
+      console.log('Task found and ownership verified, proceeding with deletion:', taskData)
+      
+      // Delete the task
+      const { data: deletedData, error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId)
+        .select()
+
+      if (error) {
+        console.error('Error deleting task:', error)
+        // Provide more specific error messages
+        if (error.code === '42501') {
+          throw new Error('삭제 권한이 없습니다. 자신의 업무만 삭제할 수 있습니다.')
+        } else if (error.code === 'PGRST116') {
+          throw new Error('삭제할 업무를 찾을 수 없습니다.')
+        } else {
+          throw new Error(`삭제 실패: ${error.message}`)
+        }
+      }
+
+      if (!deletedData || deletedData.length === 0) {
+        throw new Error('업무 삭제에 실패했습니다. 업무가 존재하지 않거나 권한이 없습니다.')
+      }
+      
+      console.log('Task deleted successfully:', taskId, deletedData)
+      return taskId
     },
-    onSuccess: () => {
+    onSuccess: (taskId) => {
+      console.log('Invalidating queries after task deletion:', taskId)
+      // Invalidate all task queries to ensure UI updates immediately
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      // Also remove from cache optimistically
+      queryClient.setQueryData(['tasks'], (oldData: Task[] | undefined) => {
+        if (!oldData) return oldData
+        return oldData.filter((task) => task.id !== taskId)
+      })
     },
   })
 }

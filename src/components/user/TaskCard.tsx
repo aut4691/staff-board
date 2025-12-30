@@ -6,9 +6,6 @@ interface TaskCardProps {
   onUpdateStatus: (taskId: string) => void
   onViewFeedback: (taskId: string) => void
   onViewDetails: (taskId: string) => void
-  hasFeedback?: boolean
-  hasUnreadFeedback?: boolean
-  isFeedbackViewed?: boolean
 }
 
 const getStatusColor = (color: TrafficLightColor) => {
@@ -51,9 +48,6 @@ export const TaskCard = ({
   onUpdateStatus,
   onViewFeedback,
   onViewDetails,
-  hasFeedback = false,
-  hasUnreadFeedback = false,
-  isFeedbackViewed = false,
 }: TaskCardProps) => {
   const statusColor = getStatusColor(task.traffic_light)
   const priorityBadge = getPriorityBadge(task.traffic_light)
@@ -62,11 +56,7 @@ export const TaskCard = ({
   return (
     <div
       onClick={() => onViewDetails(task.id)}
-      className={`bg-white rounded-xl border-2 p-4 mb-3 hover:shadow-xl transition-all duration-300 cursor-pointer group transform hover:-translate-y-1 ${
-        hasUnreadFeedback 
-          ? 'border-red-500 shadow-lg shadow-red-100 ring-4 ring-red-50' 
-          : 'border-gray-200 hover:border-indigo-300'
-      }`}
+      className="bg-white/50 backdrop-blur-xl rounded-xl border-2 p-4 mb-3 hover:shadow-2xl transition-all duration-300 cursor-pointer group transform hover:-translate-y-1 border-white/50 hover:border-indigo-300/50 shadow-lg"
     >
       {/* Card Header */}
       <div className="flex items-start gap-3 mb-3">
@@ -76,9 +66,9 @@ export const TaskCard = ({
             <span className={`text-xs px-2 py-1 rounded-lg font-bold ${priorityBadge.color} shadow-sm`}>
               {priorityBadge.label}
             </span>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
+            <div className="flex items-center gap-1 text-xs text-gray-600">
               <Clock className="w-3 h-3" />
-              <span className={`font-medium ${daysRemaining < 0 ? 'text-red-600' : daysRemaining <= 3 ? 'text-yellow-600' : 'text-gray-600'}`}>
+              <span className={`font-medium ${daysRemaining < 0 ? 'text-red-600' : daysRemaining <= 3 ? 'text-yellow-600' : 'text-gray-700'}`}>
                 {daysRemaining < 0 ? `${Math.abs(daysRemaining)}일 지연` : daysRemaining === 0 ? '오늘 마감' : `D-${daysRemaining}`}
               </span>
             </div>
@@ -96,9 +86,9 @@ export const TaskCard = ({
               </div>
               <span className="font-bold text-indigo-600">{task.progress}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-white/20 backdrop-blur-sm rounded-full h-2 overflow-hidden border border-white/30">
               <div 
-                className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500 shadow-sm"
+                className="h-full bg-gradient-to-r from-indigo-400 to-blue-400 rounded-full transition-all duration-500 shadow-lg"
                 style={{ width: `${task.progress}%` }}
               />
             </div>
@@ -113,7 +103,7 @@ export const TaskCard = ({
             e.stopPropagation()
             onUpdateStatus(task.id)
           }}
-          className="flex-1 px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-lg transition-all duration-200 font-medium text-gray-700 hover:shadow-md"
+          className="flex-1 px-3 py-2 bg-gray-100/80 backdrop-blur-md hover:bg-gray-200/80 border border-gray-300/50 rounded-lg transition-all duration-200 font-medium text-gray-700 hover:shadow-lg"
         >
           상태 업데이트
         </button>
@@ -123,31 +113,13 @@ export const TaskCard = ({
             e.stopPropagation()
             onViewFeedback(task.id)
           }}
-          className={`flex items-center gap-1 px-3 py-2 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium ${
-            hasUnreadFeedback
-              ? 'bg-gradient-to-r from-red-500 to-red-600 animate-pulse'
-              : isFeedbackViewed && hasFeedback
-              ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-              : hasFeedback
-              ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
-              : 'bg-gradient-to-r from-gray-400 to-gray-500'
-          }`}
+          className="flex items-center gap-1 px-3 py-2 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium backdrop-blur-md border border-white/30 bg-gradient-to-r from-blue-500/80 to-indigo-500/80"
         >
           <MessageCircle className="w-3 h-3" />
           <span>피드백</span>
-          {hasUnreadFeedback && (
-            <span className="ml-1 w-2 h-2 bg-white rounded-full animate-ping" />
-          )}
         </button>
       </div>
       
-      {/* Unread Feedback Indicator */}
-      {hasUnreadFeedback && (
-        <div className="mt-2 text-xs text-red-600 font-semibold flex items-center gap-1">
-          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-          새 피드백이 있습니다
-        </div>
-      )}
     </div>
   )
 }
