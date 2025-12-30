@@ -61,9 +61,20 @@ export const useAuth = () => {
       try {
         const {
           data: { session },
+          error: sessionError,
         } = await supabase.auth.getSession()
 
-        if (!isMounted) return
+        if (!isMounted) {
+          setLoading(false)
+          return
+        }
+
+        if (sessionError) {
+          console.error('Error getting session:', sessionError)
+          setUser(null)
+          setLoading(false)
+          return
+        }
 
         if (session?.user) {
           await fetchUserProfile(session.user.id)
@@ -73,7 +84,10 @@ export const useAuth = () => {
           setLoading(false)
         }
       } catch (error) {
-        if (!isMounted) return
+        if (!isMounted) {
+          setLoading(false)
+          return
+        }
         console.error('Error checking initial session:', error)
         setUser(null)
         setLoading(false)
@@ -96,11 +110,12 @@ export const useAuth = () => {
           }
           setLoading(false)
         }
-      }, 3000) // 3 second timeout
+      }, 2000) // 2 second timeout (reduced from 3)
     }
 
-    setLoadingTimeout()
+    // Start session check and timeout
     checkInitialSession()
+    setLoadingTimeout()
 
     // Listen for auth changes (this handles subsequent changes)
     const {
@@ -136,6 +151,7 @@ export const useAuth = () => {
           }
         } else {
           // No session in INITIAL_SESSION event
+          console.log('INITIAL_SESSION: No session found')
           setUser(null)
           setLoading(false)
         }
@@ -149,6 +165,7 @@ export const useAuth = () => {
         }
       } else {
         // No session and no specific event, ensure loading is false
+        console.log('No session found, setting loading to false')
         setUser(null)
         setLoading(false)
       }
@@ -159,11 +176,6 @@ export const useAuth = () => {
       if (loadingTimeout) {
         clearTimeout(loadingTimeout)
       }
-      subscription.unsubscribe()
-    }
-
-    return () => {
-      isMounted = false
       subscription.unsubscribe()
     }
   }, [setUser, setLoading])

@@ -12,6 +12,7 @@ export const LoginPage = () => {
   const [error, setError] = useState('')
   const [showSignup, setShowSignup] = useState(false)
   const [rememberEmail, setRememberEmail] = useState(false)
+  const [isFormFocused, setIsFormFocused] = useState(false)
   const navigate = useNavigate()
 
   // Load saved email on mount from Supabase
@@ -310,7 +311,7 @@ export const LoginPage = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 overflow-hidden">
         {/* Animated Stars Layer 1 - Small stars */}
         <div className="absolute inset-0">
-          {[...Array(150)].map((_, i) => {
+          {[...Array(30)].map((_, i) => {
             const size = Math.random() * 2 + 0.5
             const left = Math.random() * 100
             const top = Math.random() * 100
@@ -327,9 +328,11 @@ export const LoginPage = () => {
                   left: `${left}%`,
                   top: `${top}%`,
                   boxShadow: `0 0 ${size * 2}px rgba(255, 255, 255, 0.8)`,
-                  animation: `twinkle ${duration}s ease-in-out infinite`,
+                  animation: !isFormFocused ? `twinkle ${duration}s ease-in-out infinite` : 'none',
                   animationDelay: `${delay}s`,
                   opacity: 0.6 + Math.random() * 0.4,
+                  willChange: 'transform, opacity',
+                  transform: 'translateZ(0)',
                 }}
               />
             )
@@ -338,7 +341,7 @@ export const LoginPage = () => {
 
         {/* Animated Stars Layer 2 - Medium stars */}
         <div className="absolute inset-0">
-          {[...Array(80)].map((_, i) => {
+          {[...Array(20)].map((_, i) => {
             const size = Math.random() * 1.5 + 1
             const left = Math.random() * 100
             const top = Math.random() * 100
@@ -355,9 +358,11 @@ export const LoginPage = () => {
                   left: `${left}%`,
                   top: `${top}%`,
                   boxShadow: `0 0 ${size * 3}px rgba(255, 255, 255, 1), 0 0 ${size * 6}px rgba(147, 197, 253, 0.5)`,
-                  animation: `twinkle ${duration}s ease-in-out infinite`,
+                  animation: !isFormFocused ? `twinkle ${duration}s ease-in-out infinite` : 'none',
                   animationDelay: `${delay}s`,
                   opacity: 0.7 + Math.random() * 0.3,
+                  willChange: 'transform, opacity',
+                  transform: 'translateZ(0)',
                 }}
               />
             )
@@ -366,7 +371,7 @@ export const LoginPage = () => {
 
         {/* Animated Stars Layer 3 - Large bright stars */}
         <div className="absolute inset-0">
-          {[...Array(30)].map((_, i) => {
+          {[...Array(10)].map((_, i) => {
             const size = Math.random() * 2 + 2
             const left = Math.random() * 100
             const top = Math.random() * 100
@@ -388,18 +393,20 @@ export const LoginPage = () => {
                     0 0 ${size * 4}px rgba(147, 197, 253, 0.8),
                     0 0 ${size * 8}px rgba(99, 102, 241, 0.4)
                   `,
-                  animation: `twinkle ${duration}s ease-in-out infinite, float ${10 + Math.random() * 10}s ease-in-out infinite`,
+                  animation: !isFormFocused ? `twinkle ${duration}s ease-in-out infinite, float ${10 + Math.random() * 10}s ease-in-out infinite` : 'none',
                   animationDelay: `${delay}s`,
                   opacity: 0.8 + Math.random() * 0.2,
+                  willChange: 'transform, opacity',
+                  transform: 'translateZ(0)',
                 }}
               />
             )
           })}
         </div>
 
-        {/* Shooting Stars */}
+        {/* Shooting Stars - Reduced to 1-2 */}
         <div className="absolute inset-0 overflow-hidden">
-          {[...Array(5)].map((_, i) => {
+          {[...Array(2)].map((_, i) => {
             const left = 10 + Math.random() * 80
             const top = -10
             const delay = Math.random() * 10
@@ -416,9 +423,10 @@ export const LoginPage = () => {
                   height: '100px',
                   background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.8), transparent)',
                   transform: `rotate(${-45 + Math.random() * 10}deg)`,
-                  animation: `shoot ${duration}s linear infinite`,
+                  animation: !isFormFocused ? `shoot ${duration}s linear infinite` : 'none',
                   animationDelay: `${delay}s`,
                   opacity: 0,
+                  willChange: 'transform, opacity',
                 }}
               />
             )
@@ -448,7 +456,17 @@ export const LoginPage = () => {
             </div>
 
             {/* Login Form */}
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form 
+              onSubmit={handleLogin} 
+              className="space-y-4"
+              onFocus={() => setIsFormFocused(true)}
+              onBlur={(e) => {
+                // Check if focus is moving to another form element
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setIsFormFocused(false)
+                }
+              }}
+            >
               {error && (
                 <div className="bg-red-50 border-2 border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">
                   <div className="flex items-start justify-between gap-2">
