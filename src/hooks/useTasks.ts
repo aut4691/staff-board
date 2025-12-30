@@ -50,9 +50,19 @@ export const useUpdateTask = () => {
         updates.updated_at = new Date().toISOString()
       }
 
+      // Ensure memo is explicitly included in update if provided
+      const updateData: any = { ...updates }
+      
+      // If memo is explicitly set (including null/empty), include it
+      if ('memo' in updates) {
+        updateData.memo = updates.memo === null || updates.memo === '' ? null : updates.memo
+      }
+
+      console.log('Sending update to Supabase:', updateData)
+
       const { data, error } = await supabase
         .from('tasks')
-        .update(updates)
+        .update(updateData)
         .eq('id', taskId)
         .select()
         .single()
@@ -69,17 +79,19 @@ export const useUpdateTask = () => {
       console.log('Task updated successfully:', data)
       return data
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
       console.log('Invalidating queries after task update')
-      // Invalidate all task queries to ensure UI updates
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      // Also update the cache optimistically
+      // Update the cache with the returned data first
       queryClient.setQueryData(['tasks'], (oldData: Task[] | undefined) => {
         if (!oldData) return oldData
         return oldData.map((task) =>
-          task.id === variables.taskId ? { ...task, ...variables.updates } : task
+          task.id === variables.taskId ? { ...task, ...data } : task
         )
       })
+      // Then invalidate all task queries to ensure UI updates from server
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      // Force refetch to ensure latest data
+      queryClient.refetchQueries({ queryKey: ['tasks'] })
     },
   })
 }

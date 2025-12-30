@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { LoginPage } from './pages/LoginPage'
 import { UserPage } from './pages/UserPage'
@@ -8,7 +9,26 @@ import { ProfilePage } from './pages/ProfilePage'
 // Root redirect component - handles authentication state and redirects accordingly
 const RootRedirect = () => {
   const { user, isLoading } = useAuth()
+  const [shouldRedirect, setShouldRedirect] = useState(false)
 
+  // If loading takes too long (more than 1 second), redirect to login
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        console.log('Loading timeout in RootRedirect, redirecting to login')
+        setShouldRedirect(true)
+      }, 1000) // 1 second timeout
+
+      return () => clearTimeout(timer)
+    }
+  }, [isLoading])
+
+  // If loading timeout reached, redirect to login immediately
+  if (shouldRedirect) {
+    return <Navigate to="/login" replace />
+  }
+
+  // If loading, show loading screen
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">

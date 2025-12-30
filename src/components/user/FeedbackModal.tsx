@@ -1,5 +1,6 @@
 import { X, MessageSquare, FileText, Send, Heart } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useFeedbacks, useAddComment, useToggleCommentLike } from '@/hooks/useFeedbacks'
 import { supabase } from '@/lib/supabase'
 
@@ -36,6 +37,7 @@ export const FeedbackModal = ({
   const { data: feedbacks = [] } = useFeedbacks(taskId || '')
   const addComment = useAddComment()
   const toggleLike = useToggleCommentLike()
+  const queryClient = useQueryClient()
   const [newComment, setNewComment] = useState('')
   const [fromUserName, setFromUserName] = useState<string>('센터장')
   const MAX_COMMENTS = 5
@@ -196,6 +198,44 @@ export const FeedbackModal = ({
       setNewComment('')
     }
   }, [isOpen])
+
+  // Mark feedback as viewed when modal opens (update last_viewed_at in DB)
+  useEffect(() => {
+    const markFeedbackAsViewed = async () => {
+      if (!isOpen || !taskId || feedbacks.length === 0) return
+
+      try {
+        // Get the current user ID
+        const { data: { user: currentUser } } = await supabase.auth.getUser()
+        if (!currentUser) return
+
+        // Get all feedback IDs for this task
+        const feedbackIds = feedbacks.map((fb: any) => fb.id)
+
+        // Update last_viewed_at for all feedbacks in this task
+        const { error } = await supabase
+          .from('feedbacks')
+          .update({ last_viewed_at: new Date().toISOString() })
+          .in('id', feedbackIds)
+          .eq('to_user_id', currentUser.id)
+
+        if (error) {
+          console.error('Error marking feedback as viewed:', error)
+        } else {
+          console.log('Feedback marked as viewed in DB')
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ['feedbacks', taskId] })
+          queryClient.invalidateQueries({ queryKey: ['unread-feedbacks'] })
+        }
+      } catch (error) {
+        console.error('Error marking feedback as viewed:', error)
+      }
+    }
+
+    if (isOpen && taskId) {
+      markFeedbackAsViewed()
+    }
+  }, [isOpen, taskId, feedbacks, queryClient])
 
   if (!isOpen) return null
 

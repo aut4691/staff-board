@@ -143,20 +143,32 @@ export const UserPage = () => {
     else if (diffDays <= 7) trafficLight = 'yellow'
     
     try {
+      // Prepare updates object
+      const updates: any = {
+        title: title.trim(),
+        status,
+        progress: finalProgress,
+        deadline,
+        traffic_light: trafficLight,
+        updated_at: new Date().toISOString(),
+      }
+
+      // Always update memo, even if empty (to allow clearing)
+      if (memo !== undefined) {
+        updates.memo = memo.trim() || null
+      }
+
+      console.log('Updating task with:', updates)
+
       await updateTask.mutateAsync({
         taskId: statusModal.taskId,
-        updates: {
-          title: title.trim(),
-          status,
-          progress: finalProgress,
-          deadline,
-          traffic_light: trafficLight,
-          ...(memo?.trim() ? { memo: memo.trim() } : {}),
-          updated_at: new Date().toISOString(),
-        },
+        updates,
       })
       
       console.log('Status update saved successfully')
+      // Invalidate and refetch tasks to ensure UI updates
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.refetchQueries({ queryKey: ['tasks'] })
       setStatusModal({ isOpen: false, taskId: null })
     } catch (error: any) {
       console.error('Error saving status update:', error)
@@ -372,7 +384,7 @@ export const UserPage = () => {
           {/* Floating Add Button */}
           <button
             onClick={() => setNewTaskModal(true)}
-            className="fixed bottom-24 right-6 bg-gradient-to-r from-purple-500/80 to-indigo-500/80 backdrop-blur-xl text-white p-3 rounded-2xl shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 z-40 flex items-center gap-2 group border border-white/30"
+            className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 bg-gradient-to-r from-purple-500/80 to-indigo-500/80 backdrop-blur-xl text-white p-3 sm:p-3 rounded-2xl shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 z-40 flex items-center gap-2 group border border-white/30"
             title="새 업무 등록"
           >
             <div className="bg-white/30 backdrop-blur-md p-1.5 rounded-lg group-hover:bg-white/40 transition-all duration-300 border border-white/20">
@@ -384,7 +396,7 @@ export const UserPage = () => {
       </div>
 
       {/* Modals */}
-      {currentTask && (
+      {currentTask && statusModal.isOpen && (
         <StatusUpdateModal
           isOpen={statusModal.isOpen}
           onClose={() => setStatusModal({ isOpen: false, taskId: null })}

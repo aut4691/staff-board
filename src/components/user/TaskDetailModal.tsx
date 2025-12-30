@@ -291,15 +291,15 @@ export const TaskDetailModal = ({
             </div>
           </div>
 
-          {/* Description */}
-          {task.description && (
+          {/* Memo (Status Update) */}
+          {task.memo && (
             <div className="mb-6">
               <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                상세 설명
+                주요 진행 사항
               </h4>
-              <p className="text-gray-800 bg-white/50 backdrop-blur-md rounded-xl p-4 whitespace-pre-wrap border border-white/40 shadow-lg">
-                {task.description}
+              <p className="text-gray-800 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-md rounded-xl p-4 whitespace-pre-wrap border border-blue-200/40 shadow-lg">
+                {task.memo}
               </p>
             </div>
           )}

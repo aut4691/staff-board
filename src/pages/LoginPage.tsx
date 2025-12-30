@@ -124,45 +124,49 @@ export const LoginPage = () => {
         // Handle email not confirmed error
         if (authError.message.includes('Email not confirmed') || authError.message.includes('email_not_confirmed')) {
           setError('이메일 인증이 필요합니다. 이메일을 확인해주세요.')
-          // Optionally resend confirmation email
+          setLoading(false)
           return
         }
         throw authError
       }
 
       if (data.user) {
-        // Save email to Supabase if remember checkbox is checked
-        try {
-          if (rememberEmail) {
-            // Save to Supabase
-            await supabase
+        // Save email to Supabase if remember checkbox is checked (async, don't wait)
+        if (rememberEmail) {
+          // Save to localStorage immediately
+          localStorage.setItem('remembered_email', email)
+          localStorage.setItem('remember_email', 'true')
+          
+          // Save to Supabase (async, don't block - fire and forget)
+          Promise.resolve(
+            supabase
               .from('user_profiles')
               .update({
                 saved_email: email,
                 remember_email: true,
               })
               .eq('id', data.user.id)
-            
-            // Also save to localStorage as backup
-            localStorage.setItem('remembered_email', email)
-            localStorage.setItem('remember_email', 'true')
-          } else {
-            // Remove from Supabase
-            await supabase
+          ).catch((saveError: any) => {
+            console.error('Error saving email preference:', saveError)
+            // localStorage is already saved, so continue
+          })
+        } else {
+          // Remove from localStorage immediately
+          localStorage.removeItem('remembered_email')
+          localStorage.removeItem('remember_email')
+          
+          // Remove from Supabase (async, don't block - fire and forget)
+          Promise.resolve(
+            supabase
               .from('user_profiles')
               .update({
                 saved_email: null,
                 remember_email: false,
               })
               .eq('id', data.user.id)
-            
-            // Remove from localStorage
-            localStorage.removeItem('remembered_email')
-            localStorage.removeItem('remember_email')
-          }
-        } catch (saveError) {
-          console.error('Error saving email preference:', saveError)
-          // Continue with login even if save fails
+          ).catch((saveError: any) => {
+            console.error('Error removing email preference:', saveError)
+          })
         }
 
         // Fetch full user profile and set it in auth store
@@ -191,12 +195,21 @@ export const LoginPage = () => {
 
         console.log('User set in auth store, navigating...', profile.role)
 
-        // Navigate based on role
-        if (profile.role === 'admin') {
-          navigate('/admin', { replace: true })
-        } else {
-          navigate('/user', { replace: true })
-        }
+        // Reset loading state before navigation
+        setLoading(false)
+
+        // Navigate based on role with a small delay to ensure state is updated
+        setTimeout(() => {
+          if (profile.role === 'admin') {
+            navigate('/admin', { replace: true })
+          } else {
+            navigate('/user', { replace: true })
+          }
+        }, 100)
+      } else {
+        // No user data returned
+        setError('로그인에 실패했습니다. 사용자 정보를 가져올 수 없습니다.')
+        setLoading(false)
       }
     } catch (err: any) {
       // More user-friendly error messages
@@ -213,7 +226,6 @@ export const LoginPage = () => {
       }
       
       setError(errorMessage)
-    } finally {
       setLoading(false)
     }
   }

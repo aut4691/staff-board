@@ -59,10 +59,16 @@ export const useAuth = () => {
       setLoading(true)
 
       try {
+        // Use getSession with a timeout to avoid hanging
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session check timeout')), 800)
+        )
+
         const {
           data: { session },
           error: sessionError,
-        } = await supabase.auth.getSession()
+        } = await Promise.race([sessionPromise, timeoutPromise]) as any
 
         if (!isMounted) {
           setLoading(false)
@@ -77,18 +83,31 @@ export const useAuth = () => {
         }
 
         if (session?.user) {
-          await fetchUserProfile(session.user.id)
+          // Check if session is valid and not expired
+          const expiresAt = session.expires_at
+          if (expiresAt && expiresAt * 1000 < Date.now()) {
+            // Session expired, clear it
+            console.log('Session expired, clearing and redirecting to login')
+            await supabase.auth.signOut()
+            setUser(null)
+            setLoading(false)
+          } else {
+            // Session is valid, fetch user profile
+            await fetchUserProfile(session.user.id)
+          }
         } else {
-          console.log('No initial session found')
+          // No session found - immediately redirect to login
+          console.log('No initial session found - redirecting to login immediately')
           setUser(null)
           setLoading(false)
         }
-      } catch (error) {
+      } catch (error: any) {
         if (!isMounted) {
           setLoading(false)
           return
         }
-        console.error('Error checking initial session:', error)
+        // If timeout or other error, assume no session and redirect to login
+        console.log('Session check failed or timed out, redirecting to login:', error?.message)
         setUser(null)
         setLoading(false)
       }
@@ -110,7 +129,7 @@ export const useAuth = () => {
           }
           setLoading(false)
         }
-      }, 2000) // 2 second timeout (reduced from 3)
+      }, 1000) // 1 second timeout - faster response
     }
 
     // Start session check and timeout

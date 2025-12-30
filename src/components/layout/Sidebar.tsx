@@ -31,7 +31,7 @@ export const Sidebar = ({ selectedMenu, onMenuChange, taskCounts }: SidebarProps
   }
 
   return (
-    <aside className="w-56 md:w-64 bg-white/20 backdrop-blur-xl border-r border-white/30 flex flex-col shadow-2xl">
+    <aside className="w-0 md:w-56 lg:w-64 bg-white/20 backdrop-blur-xl border-r border-white/30 flex flex-col shadow-2xl transition-all duration-300 overflow-hidden md:overflow-visible">
       <nav className="flex-1 p-3 md:p-4 overflow-y-auto custom-scrollbar">
         <ul className="space-y-2">
           {menuItems.map((item) => {

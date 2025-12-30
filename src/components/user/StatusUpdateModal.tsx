@@ -55,13 +55,15 @@ export const StatusUpdateModal = ({
       // Use currentMemo if available, otherwise use empty string
       // This ensures we always show the latest memo value
       const memoValue = currentMemo || ''
+      // Force update all state values to ensure latest data is shown
       setMemo(memoValue)
       setTitle(taskTitle)
       setStatus(currentStatus)
       setProgress(currentProgress)
       setDeadline(currentDeadline)
       setIsEditingTitle(false)
-      console.log('Set values:', { memo: memoValue, title: taskTitle, deadline: currentDeadline })
+      setIsSaving(false) // Reset saving state
+      console.log('Set values:', { memo: memoValue, title: taskTitle, deadline: currentDeadline, status: currentStatus, progress: currentProgress })
     }
   }, [isOpen, currentMemo, currentStatus, currentProgress, currentDeadline, taskTitle])
 

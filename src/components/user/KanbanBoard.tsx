@@ -141,7 +141,7 @@ export const KanbanBoard = ({
         )}
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 min-h-[calc(100vh-240px)]">
+      <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 min-h-[calc(100vh-240px)] sm:min-h-0">
         {columns.map((column) => {
           const columnTasks = getTasksByStatus(column.id)
           const Icon = column.icon
@@ -149,7 +149,7 @@ export const KanbanBoard = ({
           return (
             <div 
               key={column.id} 
-              className="flex flex-col"
+              className="flex flex-col w-full sm:w-auto"
               onDrop={() => handleDrop(column.id)}
               onDragOver={handleDragOver}
             >
