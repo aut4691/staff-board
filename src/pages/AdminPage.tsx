@@ -26,6 +26,7 @@ export const AdminPage = () => {
   const createFeedback = useCreateFeedback()
 
   const [selectedFilter, setSelectedFilter] = useState('all')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [feedbackModal, setFeedbackModal] = useState<{
     isOpen: boolean
     taskId: string | null
@@ -205,6 +206,7 @@ export const AdminPage = () => {
       <div className="relative z-10">
         <Header
           userName="관리자 대시보드"
+          onMenuClick={() => setSidebarOpen(true)}
           onProfileClick={() => navigate('/profile')}
         onLogoutClick={async () => {
           if (window.confirm('로그아웃 하시겠습니까?')) {
@@ -231,6 +233,8 @@ export const AdminPage = () => {
           selectedFilter={selectedFilter}
           onFilterChange={setSelectedFilter}
           taskCounts={taskCounts}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
 
         {/* Main Content Area */}

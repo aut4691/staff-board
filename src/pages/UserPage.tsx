@@ -28,6 +28,7 @@ export const UserPage = () => {
   const markFeedbackRead = useMarkFeedbackRead()
 
   const [selectedMenu, setSelectedMenu] = useState('all')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Modal states
   const [feedbackModal, setFeedbackModal] = useState<{
@@ -341,6 +342,7 @@ export const UserPage = () => {
       <div className="relative z-10">
         <Header
           userName={user.name}
+          onMenuClick={() => setSidebarOpen(true)}
           onProfileClick={() => navigate('/profile')}
           onLogoutClick={async () => {
             if (window.confirm('로그아웃 하시겠습니까?')) {
@@ -367,6 +369,8 @@ export const UserPage = () => {
           selectedMenu={selectedMenu}
           onMenuChange={setSelectedMenu}
           taskCounts={taskCounts}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
 
         {/* Kanban Board with New Task Button */}
