@@ -132,9 +132,7 @@ export const KanbanBoard = ({
                 </span>
               )}
               {todayDeadline === 0 && delayed === 0 && inProgressCount === 0 && (
-                <span className="flex items-center gap-1 text-gray-700 font-medium">
-                  ✨ 모든 업무가 순조롭게 진행 중입니다!
-                </span>
+                <span className="text-gray-600">없음</span>
               )}
             </div>
           </div>

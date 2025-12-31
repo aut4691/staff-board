@@ -1,4 +1,7 @@
-import { Users, Calendar, PlayCircle, CheckCircle, BarChart3, UserCog, X } from 'lucide-react'
+import { useEffect } from 'react'
+import { Users, Calendar, PlayCircle, CheckCircle, BarChart3, UserCog, X, MessageSquare, RefreshCw } from 'lucide-react'
+import { useAuthStore } from '@/stores/authStore'
+import { useLatestAdminComments } from '@/hooks/useFeedbacks'
 
 interface AdminSidebarProps {
   selectedFilter: string
@@ -23,6 +26,16 @@ const menuItems = [
 ]
 
 export const AdminSidebar = ({ selectedFilter, onFilterChange, taskCounts, isOpen = false, onClose }: AdminSidebarProps) => {
+  const { user } = useAuthStore()
+  const { data: latestComments = [], isLoading, error, refetch } = useLatestAdminComments(user?.id || '')
+
+  // 자동 리프레시 (1분마다)
+  useEffect(() => {
+    if (!user?.id) return
+    const interval = setInterval(() => refetch(), 60000)
+    return () => clearInterval(interval)
+  }, [user?.id, refetch])
+
   const getCount = (id: string) => {
     if (!taskCounts) return 0
     switch (id) {
@@ -122,6 +135,81 @@ export const AdminSidebar = ({ selectedFilter, onFilterChange, taskCounts, isOpe
             )
           })}
         </ul>
+
+        {/* Latest Comments from Employees */}
+        <div className="mt-4 bg-white/90 backdrop-blur-md rounded-xl p-3 border border-indigo-200 shadow-lg">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-sm font-bold text-gray-800">직원 최신 댓글</h3>
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="p-1 hover:bg-indigo-100 rounded transition-colors"
+              title="새로고침"
+            >
+              <RefreshCw className="w-3 h-3 text-indigo-600" />
+            </button>
+          </div>
+
+          {isLoading ? (
+            <div className="text-xs text-gray-500 text-center py-2">로딩 중...</div>
+          ) : error ? (
+            <div className="text-xs text-red-500 text-center py-2">오류 발생</div>
+          ) : latestComments.length > 0 ? (
+            <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
+              {latestComments.map((comment: any) => {
+                const taskTitle = Array.isArray(comment.feedbacks?.tasks)
+                  ? comment.feedbacks.tasks[0]?.title
+                  : comment.feedbacks?.tasks?.title
+
+                const timeAgo = (() => {
+                  const now = new Date()
+                  const date = new Date(comment.created_at)
+                  const diffMs = now.getTime() - date.getTime()
+                  const diffMins = Math.floor(diffMs / 60000)
+                  const diffHours = Math.floor(diffMs / 3600000)
+                  const diffDays = Math.floor(diffMs / 86400000)
+                  if (diffMins < 1) return '방금 전'
+                  if (diffMins < 60) return `${diffMins}분 전`
+                  if (diffHours < 24) return `${diffHours}시간 전`
+                  if (diffDays < 7) return `${diffDays}일 전`
+                  return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+                })()
+
+                return (
+                  <div
+                    key={comment.id}
+                    className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-2 border border-indigo-100 hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-lg">💬</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-800 truncate">
+                          {taskTitle || '업무'}
+                        </p>
+                        <p className="text-xs text-gray-600 line-clamp-2 mt-0.5">
+                          {comment.content}
+                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-indigo-600">{timeAgo}</p>
+                          <p className="text-xs text-gray-500">
+                            {comment.user_profiles?.name || '직원'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-xs text-gray-500 text-center py-2">
+              <p>직원 댓글이 없습니다</p>
+              <p className="text-[10px] mt-1 text-gray-400">댓글이 등록되면 표시됩니다</p>
+            </div>
+          )}
+        </div>
       </nav>
     </aside>
     </>

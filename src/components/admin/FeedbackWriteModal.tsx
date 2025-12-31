@@ -116,7 +116,7 @@ export const FeedbackWriteModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full h-[90vh] max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300 border border-white/40">
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full h-[90vh] max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300 border border-gray-200/50">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-xl px-5 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl flex-shrink-0 border-b border-white/20">
           <div className="flex items-center gap-2 md:gap-3">
@@ -137,7 +137,7 @@ export const FeedbackWriteModal = ({
         {/* Content - Scrollable */}
         <div className="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar min-h-0 space-y-4" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           {/* Task Name */}
-          <div className="bg-gradient-to-br from-blue-100/60 to-indigo-100/60 backdrop-blur-md rounded-xl p-4 border border-white/40 shadow-lg">
+          <div className="bg-gradient-to-br from-blue-100 to-indigo-100 backdrop-blur-md rounded-xl p-4 border border-indigo-200 shadow-lg">
             <div className="flex items-center gap-2 mb-1">
               <FileText className="w-4 h-4 text-gray-700" />
               <span className="text-xs text-gray-700 font-medium">업무명</span>
@@ -158,8 +158,8 @@ export const FeedbackWriteModal = ({
                     key={message.id}
                     className={`rounded-lg p-3 border backdrop-blur-md shadow-lg ${
                       message.type === 'feedback'
-                        ? 'bg-gradient-to-br from-blue-100/60 to-indigo-100/60 border-blue-300/50'
-                        : 'bg-gradient-to-br from-white/50 to-blue-50/60 border-white/40'
+                        ? 'bg-gradient-to-br from-blue-100 to-indigo-100 border-blue-300'
+                        : 'bg-gradient-to-br from-white to-blue-50 border-gray-200'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -236,17 +236,17 @@ export const FeedbackWriteModal = ({
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder="피드백을 입력하세요..."
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar bg-white/80 backdrop-blur-sm"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar bg-white"
               rows={4}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t border-white/40 bg-white/40 backdrop-blur-xl px-4 md:px-6 py-3 md:py-4 flex justify-end gap-2 md:gap-3 rounded-b-2xl flex-shrink-0">
+        <div className="border-t border-gray-200 bg-white/95 backdrop-blur-xl px-4 md:px-6 py-3 md:py-4 flex justify-end gap-2 md:gap-3 rounded-b-2xl flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-2 border-2 border-white/40 bg-white/20 backdrop-blur-md text-gray-700 rounded-lg hover:bg-white/30 transition-all duration-200 font-medium shadow-lg"
+            className="px-6 py-2 border-2 border-gray-300 bg-white backdrop-blur-md text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium shadow-lg"
           >
             취소
           </button>

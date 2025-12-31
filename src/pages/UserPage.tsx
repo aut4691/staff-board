@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTasks, useUpdateTask, useCreateTask, useDeleteTask } from '@/hooks/useTasks'
-import { useUnreadFeedbacks, useMarkFeedbackRead } from '@/hooks/useFeedbacks'
+import { useUnreadFeedbacks, useMarkFeedbackAsRead } from '@/hooks/useFeedbacks'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -13,6 +13,7 @@ import { FeedbackListModal } from '@/components/user/FeedbackListModal'
 import { StatusUpdateModal } from '@/components/user/StatusUpdateModal'
 import { TaskDetailModal } from '@/components/user/TaskDetailModal'
 import { NewTaskModal } from '@/components/user/NewTaskModal'
+import { GameModal } from '@/components/common/GameModal'
 import { useQueryClient } from '@tanstack/react-query'
 import type { TaskStatus, TrafficLightColor } from '@/types/index'
 
@@ -25,7 +26,7 @@ export const UserPage = () => {
   const updateTask = useUpdateTask()
   const createTask = useCreateTask()
   const deleteTask = useDeleteTask()
-  const markFeedbackRead = useMarkFeedbackRead()
+  const markFeedbackRead = useMarkFeedbackAsRead()
 
   const [selectedMenu, setSelectedMenu] = useState('all')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -34,6 +35,9 @@ export const UserPage = () => {
   const [feedbackModal, setFeedbackModal] = useState<{
     isOpen: boolean
     taskId: string | null
+    taskTitle?: string
+    feedbackMessage?: string
+    feedbackDate?: string
   }>({ isOpen: false, taskId: null })
 
   const [statusModal, setStatusModal] = useState<{
@@ -48,6 +52,7 @@ export const UserPage = () => {
 
   const [newTaskModal, setNewTaskModal] = useState(false)
   const [feedbackListModal, setFeedbackListModal] = useState(false)
+  const [gameModal, setGameModal] = useState(false)
 
 
   // Filter tasks based on selected menu
@@ -359,6 +364,7 @@ export const UserPage = () => {
               }
             }
           }}
+          onGameClick={() => setGameModal(true)}
         />
       </div>
 
@@ -371,6 +377,15 @@ export const UserPage = () => {
           taskCounts={taskCounts}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          onViewFeedback={(taskId, taskTitle, feedbackMessage, feedbackDate) => {
+            setFeedbackModal({
+              isOpen: true,
+              taskId,
+              taskTitle,
+              feedbackMessage,
+              feedbackDate,
+            })
+          }}
         />
 
         {/* Kanban Board with New Task Button */}
@@ -469,6 +484,12 @@ export const UserPage = () => {
         onFeedbackClick={(taskId) => {
           handleViewFeedback(taskId)
         }}
+      />
+
+      {/* Game Modal */}
+      <GameModal
+        isOpen={gameModal}
+        onClose={() => setGameModal(false)}
       />
 
       {/* Footer */}

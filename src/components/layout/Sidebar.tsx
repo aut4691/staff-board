@@ -1,4 +1,7 @@
-import { ClipboardList, Calendar, PlayCircle, CheckCircle, X } from 'lucide-react'
+import { useEffect } from 'react'
+import { ClipboardList, Calendar, PlayCircle, CheckCircle, X, MessageSquare, RefreshCw } from 'lucide-react'
+import { useRecentFeedbacks } from '@/hooks/useFeedbacks'
+import { useAuthStore } from '@/stores/authStore'
 
 interface SidebarProps {
   selectedMenu: string
@@ -11,6 +14,7 @@ interface SidebarProps {
   }
   isOpen?: boolean
   onClose?: () => void
+  onViewFeedback?: (taskId: string, taskTitle: string, feedbackMessage: string, feedbackDate: string) => void
 }
 
 const menuItems = [
@@ -20,7 +24,51 @@ const menuItems = [
   { id: 'completed', label: '완료', icon: CheckCircle },
 ]
 
-export const Sidebar = ({ selectedMenu, onMenuChange, taskCounts, isOpen = false, onClose }: SidebarProps) => {
+export const Sidebar = ({ selectedMenu, onMenuChange, taskCounts, isOpen = false, onClose, onViewFeedback }: SidebarProps) => {
+  const { user } = useAuthStore()
+  const { data: recentFeedbacks = [], isLoading, error, refetch } = useRecentFeedbacks(user?.id || '')
+
+  // 주기적으로 refetch (추가 보장)
+  useEffect(() => {
+    if (!user?.id) return
+
+    const interval = setInterval(() => {
+      console.log('🔄 [Sidebar] Auto-refetching recent feedbacks')
+      refetch()
+    }, 60000) // 1분마다
+
+    return () => clearInterval(interval)
+  }, [user?.id, refetch])
+
+  console.log('📊 [Sidebar] Recent feedbacks state:', {
+    count: recentFeedbacks.length,
+    isLoading,
+    error: error ? String(error) : null,
+    userId: user?.id,
+    userName: user?.name,
+    userEmail: user?.email,
+    feedbacks: recentFeedbacks.map((f: any) => {
+      const taskTitle = Array.isArray(f.tasks) ? f.tasks[0]?.title : f.tasks?.title
+      return {
+        id: f.id,
+        taskTitle,
+        message: f.message?.substring(0, 30),
+        fromUser: '센터장',
+      }
+    }),
+  })
+
+  // 디버깅: 피드백이 없을 때 상세 정보 표시
+  useEffect(() => {
+    if (!isLoading && recentFeedbacks.length === 0 && user?.id) {
+      console.warn('⚠️ [Sidebar] No feedbacks displayed for user:', {
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+      })
+    }
+  }, [isLoading, recentFeedbacks.length, user?.id, user?.name, user?.email])
+
   const getCount = (id: string) => {
     if (!taskCounts) return 0
     switch (id) {
@@ -38,6 +86,22 @@ export const Sidebar = ({ selectedMenu, onMenuChange, taskCounts, isOpen = false
     if (onClose) {
       onClose()
     }
+  }
+
+  // 시간 경과 표시 함수
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date()
+    const date = new Date(dateString)
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return '방금 전'
+    if (diffMins < 60) return `${diffMins}분 전`
+    if (diffHours < 24) return `${diffHours}시간 전`
+    if (diffDays < 7) return `${diffDays}일 전`
+    return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
   }
 
   return (
@@ -108,6 +172,83 @@ export const Sidebar = ({ selectedMenu, onMenuChange, taskCounts, isOpen = false
             )
           })}
         </ul>
+
+        {/* Recent Feedbacks */}
+        <div className="mt-4 bg-white/90 backdrop-blur-md rounded-xl p-3 border border-indigo-200 shadow-lg">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-sm font-bold text-gray-800">최신 피드백</h3>
+            </div>
+            <button
+              onClick={() => {
+                console.log('🔄 [Sidebar] Manual refetch triggered')
+                refetch()
+              }}
+              className="p-1 hover:bg-indigo-100 rounded transition-colors"
+              title="새로고침"
+            >
+              <RefreshCw className="w-3 h-3 text-indigo-600" />
+            </button>
+          </div>
+          {isLoading ? (
+            <div className="text-xs text-gray-500 text-center py-2">로딩 중...</div>
+          ) : error ? (
+            <div className="text-xs text-red-500 text-center py-2">
+              오류 발생
+              <br />
+              <span className="text-[10px]">{String(error)}</span>
+            </div>
+          ) : recentFeedbacks.length > 0 ? (
+            <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
+              {recentFeedbacks.map((feedback: any) => {
+                const timeAgo = getTimeAgo(feedback.created_at)
+                const taskTitle = Array.isArray(feedback.tasks) ? feedback.tasks[0]?.title : feedback.tasks?.title
+                const adminName = '센터장'
+                return (
+                  <div
+                    key={feedback.id}
+                    className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-2 border border-blue-200 hover:shadow-md transition-all duration-200 cursor-pointer"
+                    onClick={() => {
+                      if (onViewFeedback) {
+                        onViewFeedback(
+                          feedback.task_id,
+                          taskTitle || '업무',
+                          feedback.message,
+                          feedback.created_at
+                        )
+                        if (onClose) onClose()
+                      }
+                    }}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-lg">💬</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-800 truncate">
+                          {feedback.tasks?.title || '업무'}
+                        </p>
+                        <p className="text-xs text-gray-600 line-clamp-2 mt-0.5">
+                          {feedback.message}
+                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-indigo-600">{timeAgo}</p>
+                          <p className="text-xs text-gray-500">{adminName}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-xs text-gray-500 text-center py-2">
+              <p>피드백이 없습니다</p>
+              <p className="text-[10px] mt-1 text-gray-400">
+                관리자가 피드백을 작성하면 여기에 표시됩니다
+              </p>
+            </div>
+          )}
+        </div>
       </nav>
     </aside>
     </>

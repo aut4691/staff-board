@@ -140,7 +140,7 @@ export const StatusUpdateModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300 border border-white/40">
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300 border border-gray-200/50">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-xl px-5 py-4 flex items-center justify-between rounded-t-2xl flex-shrink-0 border-b border-white/20">
           <div className="flex items-center gap-2">
@@ -210,7 +210,7 @@ export const StatusUpdateModal = ({
               </div>
             ) : (
               <div 
-                className="bg-gradient-to-br from-blue-100/60 to-indigo-100/60 backdrop-blur-md rounded-xl p-3 cursor-pointer hover:from-blue-200/60 hover:to-indigo-200/60 transition-all duration-200 flex items-center justify-between group border border-white/40 shadow-lg"
+                className="bg-gradient-to-br from-blue-100 to-indigo-100 backdrop-blur-md rounded-xl p-3 cursor-pointer hover:from-blue-200 hover:to-indigo-200 transition-all duration-200 flex items-center justify-between group border border-indigo-200 shadow-lg"
                 onClick={() => setIsEditingTitle(true)}
               >
                 <p className="font-bold text-gray-900 flex-1">{title || taskTitle}</p>
@@ -230,10 +230,10 @@ export const StatusUpdateModal = ({
                 <button
                   key={option.value}
                   onClick={() => setStatus(option.value)}
-                  className={`relative p-3 rounded-xl border-2 transition-all duration-200 backdrop-blur-md ${
+                  className={`relative p-3 rounded-xl border-2 transition-all duration-200 ${
                     status === option.value
-                      ? 'border-indigo-500 bg-indigo-100/60 shadow-lg transform scale-105'
-                      : `${option.color} bg-white/30`
+                      ? 'border-indigo-500 bg-indigo-100 shadow-lg transform scale-105'
+                      : option.color
                   }`}
                 >
                   <div className="text-center">
@@ -275,7 +275,7 @@ export const StatusUpdateModal = ({
                 </span>
               )}
             </label>
-            <div className="bg-gradient-to-br from-gray-100/60 to-gray-200/60 backdrop-blur-md rounded-xl p-4 border border-white/40 shadow-lg">
+            <div className="bg-gradient-to-br from-gray-100 to-gray-200 backdrop-blur-md rounded-xl p-4 border border-gray-300 shadow-lg">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-700">현재 진행률</span>
                 <span className="text-2xl font-bold text-indigo-600">{progress}%</span>
@@ -308,7 +308,7 @@ export const StatusUpdateModal = ({
             <label className="block text-sm font-bold text-gray-800 mb-2">
               주요 진행 사항 (개조식 작성)
             </label>
-            <div className="bg-blue-100/60 backdrop-blur-md border border-blue-300/50 rounded-lg p-3 mb-2 shadow-lg">
+            <div className="bg-blue-100 backdrop-blur-md border border-blue-300 rounded-lg p-3 mb-2 shadow-lg">
               <p className="text-xs text-blue-900">
                 💡 <strong>작성 가이드:</strong> 주요 진행 내용을 개조식으로 간단히 작성하세요
               </p>
@@ -322,17 +322,17 @@ export const StatusUpdateModal = ({
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               placeholder="- 주요 진행 사항 1&#10;- 주요 진행 사항 2&#10;- 주요 진행 사항 3"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar bg-white/80 backdrop-blur-sm"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar bg-white"
               rows={6}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t border-white/40 bg-white/40 backdrop-blur-xl px-5 py-3 flex justify-end gap-2 rounded-b-2xl flex-shrink-0">
+        <div className="border-t border-gray-200 bg-white/95 backdrop-blur-xl px-5 py-3 flex justify-end gap-2 rounded-b-2xl flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-2 border-2 border-white/40 bg-white/20 backdrop-blur-md text-gray-700 rounded-lg hover:bg-white/30 transition-all duration-200 font-medium shadow-lg"
+            className="px-6 py-2 border-2 border-gray-300 bg-white backdrop-blur-md text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium shadow-lg"
           >
             취소
           </button>

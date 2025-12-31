@@ -14,6 +14,19 @@ export const LoginPage = () => {
   const [rememberEmail, setRememberEmail] = useState(false)
   const [isFormFocused, setIsFormFocused] = useState(false)
   const navigate = useNavigate()
+  const { user: currentUser, isLoading: authLoading } = useAuthStore()
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (!authLoading && currentUser) {
+      console.log('User already logged in, redirecting...')
+      if (currentUser.role === 'admin') {
+        navigate('/admin', { replace: true })
+      } else {
+        navigate('/user', { replace: true })
+      }
+    }
+  }, [currentUser, authLoading, navigate])
 
   // Load saved email on mount from Supabase
   useEffect(() => {
@@ -130,87 +143,132 @@ export const LoginPage = () => {
         throw authError
       }
 
-      if (data.user) {
-        // Save email to Supabase if remember checkbox is checked (async, don't wait)
-        if (rememberEmail) {
-          // Save to localStorage immediately
-          localStorage.setItem('remembered_email', email)
-          localStorage.setItem('remember_email', 'true')
-          
-          // Save to Supabase (async, don't block - fire and forget)
-          Promise.resolve(
-            supabase
-              .from('user_profiles')
-              .update({
-                saved_email: email,
-                remember_email: true,
-              })
-              .eq('id', data.user.id)
-          ).catch((saveError: any) => {
-            console.error('Error saving email preference:', saveError)
-            // localStorage is already saved, so continue
-          })
-        } else {
-          // Remove from localStorage immediately
-          localStorage.removeItem('remembered_email')
-          localStorage.removeItem('remember_email')
-          
-          // Remove from Supabase (async, don't block - fire and forget)
-          Promise.resolve(
-            supabase
-              .from('user_profiles')
-              .update({
-                saved_email: null,
-                remember_email: false,
-              })
-              .eq('id', data.user.id)
-          ).catch((saveError: any) => {
-            console.error('Error removing email preference:', saveError)
-          })
-        }
-
-        // Fetch full user profile and set it in auth store
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single()
-
-        if (profileError) {
-          console.error('Profile fetch error:', profileError)
-          setError('사용자 정보를 불러올 수 없습니다.')
-          setLoading(false)
-          return
-        }
-
-        if (!profile) {
-          setError('사용자 프로필을 찾을 수 없습니다.')
-          setLoading(false)
-          return
-        }
-
-        // Set user in auth store manually to avoid waiting for onAuthStateChange
-        useAuthStore.getState().setUser(profile)
-        useAuthStore.getState().setLoading(false)
-
-        console.log('User set in auth store, navigating...', profile.role)
-
-        // Reset loading state before navigation
-        setLoading(false)
-
-        // Navigate based on role with a small delay to ensure state is updated
-        setTimeout(() => {
-          if (profile.role === 'admin') {
-            navigate('/admin', { replace: true })
-          } else {
-            navigate('/user', { replace: true })
-          }
-        }, 100)
-      } else {
+      if (!data.user) {
         // No user data returned
         setError('로그인에 실패했습니다. 사용자 정보를 가져올 수 없습니다.')
         setLoading(false)
+        return
       }
+
+      console.log('Login successful, user ID:', data.user.id)
+
+      // Verify session is properly set
+      const { data: { session: verifiedSession }, error: sessionVerifyError } = await supabase.auth.getSession()
+      
+      if (sessionVerifyError || !verifiedSession) {
+        console.error('Session verification failed:', sessionVerifyError)
+        setError('세션 확인에 실패했습니다. 다시 시도해주세요.')
+        setLoading(false)
+        return
+      }
+
+      console.log('Session verified, fetching profile...')
+
+      // Fetch full user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError)
+        setError('사용자 정보를 불러올 수 없습니다.')
+        setLoading(false)
+        return
+      }
+
+      if (!profile) {
+        console.error('Profile not found for user:', data.user.id)
+        setError('사용자 프로필을 찾을 수 없습니다.')
+        setLoading(false)
+        return
+      }
+
+      console.log('Profile loaded:', profile.name, 'Role:', profile.role)
+
+      // Save email preference (async, don't block)
+      if (rememberEmail) {
+        // Save to localStorage immediately
+        localStorage.setItem('remembered_email', email)
+        localStorage.setItem('remember_email', 'true')
+        
+        // Save to Supabase (async, don't block - fire and forget)
+        Promise.resolve(
+          supabase
+            .from('user_profiles')
+            .update({
+              saved_email: email,
+              remember_email: true,
+            })
+            .eq('id', data.user.id)
+        )
+          .then(() => console.log('Email preference saved'))
+          .catch((saveError: any) => {
+            console.error('Error saving email preference:', saveError)
+            // localStorage is already saved, so continue
+          })
+      } else {
+        // Remove from localStorage immediately
+        localStorage.removeItem('remembered_email')
+        localStorage.removeItem('remember_email')
+        
+        // Remove from Supabase (async, don't block - fire and forget)
+        Promise.resolve(
+          supabase
+            .from('user_profiles')
+            .update({
+              saved_email: null,
+              remember_email: false,
+            })
+            .eq('id', data.user.id)
+        )
+          .then(() => console.log('Email preference removed'))
+          .catch((saveError: any) => {
+            console.error('Error removing email preference:', saveError)
+          })
+      }
+
+      // Set user in auth store - this will trigger onAuthStateChange to skip
+      useAuthStore.getState().setUser(profile)
+      useAuthStore.getState().setLoading(false)
+
+      console.log('User set in auth store, preparing navigation...', profile.role)
+
+      // Reset local loading state
+      setLoading(false)
+
+      // Wait a moment for state to propagate, then navigate
+      // Use requestAnimationFrame to ensure React has updated
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const currentUser = useAuthStore.getState().user
+          if (currentUser && currentUser.id === profile.id) {
+            console.log('Navigating to:', profile.role === 'admin' ? '/admin' : '/user')
+            if (profile.role === 'admin') {
+              navigate('/admin', { replace: true })
+            } else {
+              navigate('/user', { replace: true })
+            }
+          } else {
+            console.error('User state mismatch, retrying navigation...')
+            // Retry once more
+            setTimeout(() => {
+              const retryUser = useAuthStore.getState().user
+              if (retryUser && retryUser.id === profile.id) {
+                if (profile.role === 'admin') {
+                  navigate('/admin', { replace: true })
+                } else {
+                  navigate('/user', { replace: true })
+                }
+              } else {
+                console.error('Navigation failed: user state not set correctly')
+                setError('로그인은 성공했지만 페이지 이동에 실패했습니다. 새로고침해주세요.')
+              }
+            }, 200)
+          }
+        }, 150)
+      })
     } catch (err: any) {
       // More user-friendly error messages
       let errorMessage = '로그인에 실패했습니다.'
@@ -464,7 +522,7 @@ export const LoginPage = () => {
               <h1 className="text-xl font-bold text-gray-900 mb-1">
                 대구 빅데이터 활용센터
               </h1>
-              <p className="text-sm text-gray-600">업무 관리 시스템</p>
+              <p className="text-sm text-gray-600">업무 관리 시스템(ver 1.0)</p>
             </div>
 
             {/* Login Form */}

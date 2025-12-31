@@ -86,7 +86,7 @@ export const AdminTaskDetailModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col border border-white/40">
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col border border-gray-200/50">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-xl px-5 md:px-6 py-4 md:py-5 flex items-center justify-between flex-shrink-0 border-b border-white/20">
           <h2 className="text-xl md:text-2xl font-bold text-white drop-shadow-lg">업무 상세</h2>
@@ -107,7 +107,7 @@ export const AdminTaskDetailModal = ({
           </div>
 
           {/* Employee Info */}
-          <div className="mb-6 bg-gradient-to-br from-indigo-100/60 to-blue-100/60 backdrop-blur-md rounded-xl p-4 border border-white/40 shadow-lg">
+          <div className="mb-6 bg-gradient-to-br from-indigo-100 to-blue-100 backdrop-blur-md rounded-xl p-4 border border-indigo-200 shadow-lg">
             <div className="flex items-center gap-2 mb-2">
               <UserIcon className="w-5 h-5 text-indigo-600" />
               <span className="font-semibold text-gray-800">담당자</span>
@@ -119,7 +119,7 @@ export const AdminTaskDetailModal = ({
 
           {/* Status and Priority */}
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-white/50 backdrop-blur-md rounded-xl p-4 border border-white/40 shadow-lg">
+            <div className="bg-white backdrop-blur-md rounded-xl p-4 border border-gray-200 shadow-lg">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-5 h-5 text-gray-800" />
                 <span className="text-sm font-medium text-gray-800">상태</span>
@@ -129,7 +129,7 @@ export const AdminTaskDetailModal = ({
               </span>
             </div>
 
-            <div className="bg-white/50 backdrop-blur-md rounded-xl p-4 border border-white/40 shadow-lg">
+            <div className="bg-white backdrop-blur-md rounded-xl p-4 border border-gray-200 shadow-lg">
               <div className="flex items-center gap-2 mb-2">
                 <div className={`w-5 h-5 rounded-full ${trafficLight.bg} shadow-lg`} />
                 <span className="text-sm font-medium text-gray-800">우선순위</span>
@@ -141,7 +141,7 @@ export const AdminTaskDetailModal = ({
           </div>
 
           {/* Progress */}
-          <div className="mb-6 bg-gradient-to-br from-indigo-100/60 to-blue-100/60 backdrop-blur-md rounded-xl p-5 border border-white/40 shadow-lg">
+          <div className="mb-6 bg-gradient-to-br from-indigo-100 to-blue-100 backdrop-blur-md rounded-xl p-5 border border-indigo-200 shadow-lg">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-indigo-600" />
@@ -149,7 +149,7 @@ export const AdminTaskDetailModal = ({
               </div>
               <span className="text-2xl font-bold text-indigo-600">{task.progress}%</span>
             </div>
-            <div className="w-full bg-white/40 backdrop-blur-sm rounded-full h-4 overflow-hidden shadow-inner border border-white/30">
+            <div className="w-full bg-gray-200 backdrop-blur-sm rounded-full h-4 overflow-hidden shadow-inner border border-gray-300">
               <div
                 className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500 flex items-center justify-end pr-2 shadow-lg"
                 style={{ width: `${task.progress}%` }}
@@ -162,7 +162,7 @@ export const AdminTaskDetailModal = ({
           </div>
 
           {/* Deadline */}
-          <div className="mb-6 bg-gradient-to-br from-orange-100/60 to-red-100/60 backdrop-blur-md rounded-xl p-5 border-2 border-orange-300/60 shadow-lg">
+          <div className="mb-6 bg-gradient-to-br from-orange-100 to-red-100 backdrop-blur-md rounded-xl p-5 border-2 border-orange-300 shadow-lg">
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
@@ -202,7 +202,7 @@ export const AdminTaskDetailModal = ({
                 <FileText className="w-5 h-5" />
                 주요 진행 사항
               </h4>
-              <p className="text-gray-800 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-md rounded-xl p-4 whitespace-pre-wrap border border-blue-200/40 shadow-lg">
+              <p className="text-gray-800 bg-gradient-to-br from-blue-50 to-indigo-50 backdrop-blur-md rounded-xl p-4 whitespace-pre-wrap border border-blue-200 shadow-lg">
                 {task.memo}
               </p>
             </div>
@@ -220,7 +220,7 @@ export const AdminTaskDetailModal = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-white/40 bg-white/40 backdrop-blur-xl px-4 md:px-6 py-3 md:py-4 flex justify-end items-center gap-2 flex-shrink-0 flex-wrap">
+        <div className="border-t border-gray-200 bg-white/95 backdrop-blur-xl px-4 md:px-6 py-3 md:py-4 flex justify-end items-center gap-2 flex-shrink-0 flex-wrap">
           <button
             onClick={() => {
               onClose()
@@ -234,7 +234,7 @@ export const AdminTaskDetailModal = ({
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 border-2 border-white/40 bg-white/20 backdrop-blur-md text-gray-700 rounded-lg hover:bg-white/30 transition-all duration-200 font-medium shadow-lg"
+            className="px-4 py-2 border-2 border-gray-300 bg-white backdrop-blur-md text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium shadow-lg"
           >
             닫기
           </button>

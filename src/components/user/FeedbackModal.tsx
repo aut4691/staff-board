@@ -96,7 +96,7 @@ export const FeedbackModal = ({
       messages.push({
         id: fb.id,
         type: 'feedback',
-        author: '센터장님',
+        author: '센터장',
         content: fb.message,
         timestamp: new Date(fb.created_at).toLocaleString('ko-KR', {
           month: 'long',
@@ -241,14 +241,14 @@ export const FeedbackModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full h-[90vh] max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300 border border-white/40">
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full h-[90vh] max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300 border border-gray-200/50">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-xl px-5 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl flex-shrink-0 border-b border-white/20">
           <div className="flex items-center gap-2 md:gap-3">
             <div className="bg-white/30 backdrop-blur-md p-2 rounded-lg border border-white/20">
               <MessageSquare className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-md" />
             </div>
-            <h3 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">센터장님 피드백</h3>
+            <h3 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">센터장 피드백</h3>
           </div>
           <button
             onClick={onClose}
@@ -262,7 +262,7 @@ export const FeedbackModal = ({
         {/* Content - Scrollable */}
         <div className="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar min-h-0 space-y-4" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           {/* Task Name */}
-          <div className="bg-gradient-to-br from-blue-100/60 to-indigo-100/60 backdrop-blur-md rounded-xl p-4 border border-white/40 shadow-lg">
+          <div className="bg-gradient-to-br from-blue-100 to-indigo-100 backdrop-blur-md rounded-xl p-4 border border-indigo-200 shadow-lg">
             <div className="flex items-center gap-2 mb-1">
               <FileText className="w-4 h-4 text-gray-700" />
               <span className="text-xs text-gray-700 font-medium">업무명</span>
@@ -283,8 +283,8 @@ export const FeedbackModal = ({
                     key={message.id}
                     className={`rounded-lg p-3 border backdrop-blur-md shadow-lg ${
                       message.type === 'feedback'
-                        ? 'bg-gradient-to-br from-blue-100/60 to-indigo-100/60 border-blue-300/50'
-                        : 'bg-gradient-to-br from-white/50 to-blue-50/60 border-white/40'
+                        ? 'bg-gradient-to-br from-blue-100 to-indigo-100 border-blue-300'
+                        : 'bg-gradient-to-br from-white to-blue-50 border-gray-200'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -352,14 +352,14 @@ export const FeedbackModal = ({
           ) : feedbackMessage ? (
             // Fallback: Show feedback message if no feedbacks loaded yet
             <div className="border-t-2 border-gray-200 pt-4">
-              <div className="bg-gradient-to-br from-blue-100/60 to-indigo-100/60 backdrop-blur-md border-blue-300/50 rounded-lg p-3 border shadow-lg">
+              <div className="bg-gradient-to-br from-blue-100 to-indigo-100 backdrop-blur-md border-blue-300 rounded-lg p-3 border shadow-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center bg-gradient-to-r from-indigo-600 to-blue-600">
                     <span className="text-white text-xs font-bold">
                       센
                     </span>
                   </div>
-                  <span className="font-semibold text-sm text-gray-900">센터장님</span>
+                  <span className="font-semibold text-sm text-gray-900">센터장</span>
                   <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full font-medium">
                     피드백
                   </span>
@@ -382,7 +382,7 @@ export const FeedbackModal = ({
 
           {/* Comment Input */}
           {!currentFeedbackId ? (
-            <div className="bg-yellow-100/60 backdrop-blur-md border border-yellow-300/50 rounded-lg p-4 text-center shadow-lg">
+            <div className="bg-yellow-100 backdrop-blur-md border border-yellow-300 rounded-lg p-4 text-center shadow-lg">
               <p className="text-sm text-yellow-800 font-medium">
                 💡 관리자가 먼저 피드백을 작성해야 댓글을 달 수 있습니다.
               </p>
@@ -399,7 +399,7 @@ export const FeedbackModal = ({
                   onChange={(e) => setNewComment(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="댓글을 입력하세요... (Enter: 전송, Shift+Enter: 줄바꿈)"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar pr-14 bg-white/80 backdrop-blur-sm"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar pr-14 bg-white"
                   rows={3}
                   disabled={!canAddComment}
                 />
@@ -414,7 +414,7 @@ export const FeedbackModal = ({
               </div>
             </div>
           ) : (
-            <div className="bg-orange-100/60 backdrop-blur-md border border-orange-300/50 rounded-lg p-3 text-center shadow-lg">
+            <div className="bg-orange-100 backdrop-blur-md border border-orange-300 rounded-lg p-3 text-center shadow-lg">
               <p className="text-sm text-orange-800 font-medium">
                 ⚠️ 최대 {MAX_COMMENTS}개까지만 댓글을 작성할 수 있습니다.
               </p>
@@ -423,10 +423,10 @@ export const FeedbackModal = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-white/40 bg-white/40 backdrop-blur-xl px-4 md:px-6 py-3 md:py-4 flex justify-end gap-2 md:gap-3 rounded-b-2xl flex-shrink-0">
+        <div className="border-t border-gray-200 bg-white/95 backdrop-blur-xl px-4 md:px-6 py-3 md:py-4 flex justify-end gap-2 md:gap-3 rounded-b-2xl flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-2 border-2 border-white/40 bg-white/20 backdrop-blur-md text-gray-700 rounded-lg hover:bg-white/30 transition-all duration-200 font-medium shadow-lg"
+            className="px-6 py-2 border-2 border-gray-300 bg-white backdrop-blur-md text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium shadow-lg"
           >
             나중에
           </button>

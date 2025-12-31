@@ -16,6 +16,91 @@ interface FeedbackWithComments extends Feedback {
   from_user_name?: string
 }
 
+// Fetch recent feedbacks (latest 3) for current user (no profile lookup to avoid RLS 406)
+export const useRecentFeedbacks = (userId: string) => {
+  return useQuery({
+    queryKey: ['recent-feedbacks', userId],
+    queryFn: async () => {
+      if (!userId) {
+        console.log('🔍 [Recent Feedbacks] No userId provided')
+        return []
+      }
+
+      console.log('🔍 [Recent Feedbacks] Fetching for userId:', userId)
+
+      // 직접 admin 프로필 조회를 하지 않고, 단순히 최신 피드백 3개를 가져옵니다.
+      const { data, error } = await supabase
+        .from('feedbacks')
+        .select(`
+          id,
+          task_id,
+          message,
+          created_at,
+          from_user_id,
+          tasks!inner(title)
+        `)
+        .eq('to_user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(3)
+
+      if (error) {
+        console.error('❌ [Recent Feedbacks] Error fetching feedbacks:', error)
+        return []
+      }
+
+      console.log('📊 [Recent Feedbacks] Total feedbacks fetched:', data?.length || 0)
+      return data || []
+    },
+    enabled: !!userId,
+    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0,
+  })
+}
+
+// Fetch latest comments on admin's feedbacks (latest 3, excluding admin's own comments)
+export const useLatestAdminComments = (adminId: string) => {
+  return useQuery({
+    queryKey: ['latest-admin-comments', adminId],
+    queryFn: async () => {
+      if (!adminId) return []
+
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          id,
+          content,
+          created_at,
+          user_id,
+          feedback_id,
+          user_profiles:comments_user_id_fkey(name),
+          feedbacks!inner(
+            task_id,
+            from_user_id,
+            tasks!inner(title)
+          )
+        `)
+        .eq('feedbacks.from_user_id', adminId) // admin이 남긴 피드백에 달린 댓글
+        .neq('user_id', adminId) // 관리자가 아닌 사용자 댓글만
+        .order('created_at', { ascending: false })
+        .limit(3)
+
+      if (error) {
+        console.error('❌ [LatestAdminComments] Error fetching comments:', error)
+        return []
+      }
+
+      return data || []
+    },
+    enabled: !!adminId,
+    refetchInterval: 30000, // 30초마다 갱신
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0,
+  })
+}
+
 // Fetch feedbacks for a task
 export const useFeedbacks = (taskId: string) => {
   return useQuery({
@@ -74,7 +159,7 @@ export const useFeedbacks = (taskId: string) => {
             .from('comments')
             .select('*')
             .eq('feedback_id', feedback.id)
-            .order('created_at', { ascending: true })
+            .order('created_at', { ascending: true})
 
           if (commentsError) {
             console.error('Error fetching comments for feedback', feedback.id, ':', commentsError)
@@ -82,64 +167,52 @@ export const useFeedbacks = (taskId: string) => {
 
           // Fetch user names and likes for each comment
           const commentsWithDetails = await Promise.all(
-            (comments || []).map(async (comment: any) => {
-              // Fetch comment author name
-              let authorName = 'Unknown'
+            (comments || []).map(async (comment) => {
+              // Fetch user name
+              let userName = 'Unknown'
               if (comment.user_id) {
-                const { data: commentUser, error: commentUserError } = await supabase
-                  .from('user_profiles')
-                  .select('name')
-                  .eq('id', comment.user_id)
-                  .single()
-                
-                if (!commentUserError && commentUser) {
-                  authorName = commentUser.name || 'Unknown'
+                try {
+                  const { data: user, error: userError } = await supabase
+                    .from('user_profiles')
+                    .select('name')
+                    .eq('id', comment.user_id)
+                    .maybeSingle()
+                  
+                  if (!userError && user && user.name) {
+                    userName = user.name
+                  }
+                } catch (error) {
+                  console.error('Error fetching user name for comment:', error)
                 }
               }
 
-              // Fetch like count and check if current user liked
-              const { data: { user } } = await supabase.auth.getUser()
-              let likeCount = 0
+              // Fetch like status for current user
+              const { data: { user: currentUser } } = await supabase.auth.getUser()
               let isLiked = false
-
-              const { data: likes, error: likesError } = await supabase
-                .from('comment_likes')
-                .select('user_id')
-                .eq('comment_id', comment.id)
-
-              if (!likesError && likes) {
-                likeCount = likes.length
-                isLiked = user ? likes.some((like: any) => like.user_id === user.id) : false
+              if (currentUser) {
+                const { data: like } = await supabase
+                  .from('comment_likes')
+                  .select('id')
+                  .eq('comment_id', comment.id)
+                  .eq('user_id', currentUser.id)
+                  .maybeSingle()
+                
+                isLiked = !!like
               }
 
               return {
-                id: comment.id,
-                feedback_id: comment.feedback_id,
-                user_id: comment.user_id,
-                content: comment.content,
-                created_at: comment.created_at,
-                author: authorName,
-                like_count: likeCount,
+                ...comment,
+                author: userName,
                 is_liked: isLiked,
               }
             })
           )
 
-          const result = {
+          return {
             ...feedback,
             comments: commentsWithDetails,
             from_user_name: fromUserName,
           } as FeedbackWithComments
-          
-          // Debug: Log the result to verify from_user_name is set
-          console.log('Feedback result:', {
-            id: result.id,
-            from_user_id: result.from_user_id,
-            from_user_name: result.from_user_name,
-            hasComments: !!result.comments && result.comments.length > 0
-          })
-          
-          return result
         })
       )
 
@@ -194,33 +267,34 @@ export const useCreateFeedback = () => {
     mutationFn: async ({
       taskId,
       toUserId,
+      fromUserId,
       message,
     }: {
       taskId: string
       toUserId: string
+      fromUserId: string
       message: string
     }) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        throw new Error('로그인이 필요합니다.')
-      }
-
-      console.log('Creating feedback:', {
+      console.log('📤 [Create Feedback] Starting feedback creation:', {
         taskId,
-        from_user_id: user.id,
-        to_user_id: toUserId,
-        message: message.trim(),
+        toUserId,
+        fromUserId,
+        messageLength: message.length,
       })
+
+      // Validate inputs
+      if (!taskId || !toUserId || !fromUserId || !message.trim()) {
+        const error = new Error('필수 필드가 누락되었습니다.')
+        console.error('❌ [Create Feedback] Validation error:', error)
+        throw error
+      }
 
       const { data, error } = await supabase
         .from('feedbacks')
         .insert({
           task_id: taskId,
-          from_user_id: user.id,
           to_user_id: toUserId,
+          from_user_id: fromUserId,
           message: message.trim(),
           is_read: false,
         })
@@ -228,79 +302,65 @@ export const useCreateFeedback = () => {
         .single()
 
       if (error) {
-        console.error('Error creating feedback:', error)
-        console.error('Error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-        })
-        throw new Error(error.message || '피드백 생성에 실패했습니다.')
+        console.error('❌ [Create Feedback] Supabase error:', error)
+        throw error
       }
 
-      console.log('Feedback created successfully:', data)
-
-      // Update last_viewed_at when admin creates feedback (marking it as viewed)
-      try {
-        const { error: updateError } = await supabase
-          .from('feedbacks')
-          .update({ last_viewed_at: new Date().toISOString() })
-          .eq('id', data.id)
-        
-        if (updateError) {
-          console.warn('Failed to update last_viewed_at:', updateError)
-        }
-      } catch (updateError) {
-        console.warn('Failed to update last_viewed_at:', updateError)
-      }
-
-      // Create notification (ignore errors)
-      try {
-        const { error: notifError } = await supabase.from('notifications').insert({
-          user_id: toUserId,
-          type: 'feedback',
-          title: '새 피드백 도착',
-          message: `새로운 피드백이 도착했습니다.`,
-          is_read: false,
-        })
-        if (notifError) {
-          console.warn('Failed to create notification:', notifError)
-        }
-      } catch (notifError) {
-        console.warn('Failed to create notification:', notifError)
-        // Don't throw - notification failure shouldn't block feedback creation
-      }
-
+      console.log('✅ [Create Feedback] Feedback created successfully:', data)
       return data
     },
-    onSuccess: (_, variables) => {
-      console.log('Invalidating queries for task:', variables.taskId)
+    onSuccess: (_data, variables) => {
+      console.log('🔄 [Create Feedback] Invalidating queries for:', {
+        taskId: variables.taskId,
+        toUserId: variables.toUserId,
+      })
+
+      // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: ['feedbacks', variables.taskId] })
+      queryClient.invalidateQueries({ queryKey: ['unread-feedbacks', variables.toUserId] })
+      queryClient.invalidateQueries({ queryKey: ['all-feedbacks', variables.toUserId] })
+      
+      // Force refetch recent feedbacks immediately
+      queryClient.invalidateQueries({ 
+        queryKey: ['recent-feedbacks', variables.toUserId],
+        exact: true 
+      })
+      
+      // Also refetch immediately
+      queryClient.refetchQueries({ 
+        queryKey: ['recent-feedbacks', variables.toUserId],
+        exact: true 
+      })
+      
+      // Also invalidate all feedbacks queries (for admin view)
       queryClient.invalidateQueries({ queryKey: ['feedbacks'] })
-      queryClient.invalidateQueries({ queryKey: ['unread-feedbacks'] })
+      
+      console.log('✅ [Create Feedback] Queries invalidated and refetched successfully')
+    },
+    onError: (error) => {
+      console.error('❌ [Create Feedback] Mutation error:', error)
     },
   })
 }
 
 // Mark feedback as read
-export const useMarkFeedbackRead = () => {
+export const useMarkFeedbackAsRead = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (feedbackId: string) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('feedbacks')
         .update({ is_read: true })
         .eq('id', feedbackId)
-        .select()
-        .single()
 
       if (error) throw error
-      return data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feedbacks'] })
       queryClient.invalidateQueries({ queryKey: ['unread-feedbacks'] })
+      queryClient.invalidateQueries({ queryKey: ['all-feedbacks'] })
+      queryClient.invalidateQueries({ queryKey: ['recent-feedbacks'] })
     },
   })
 }
@@ -317,35 +377,29 @@ export const useAddComment = () => {
       feedbackId: string
       content: string
     }) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
 
-      if (!user) {
-        throw new Error('로그인이 필요합니다.')
-      }
-
+      // Insert comment
       const { data, error } = await supabase
         .from('comments')
         .insert({
           feedback_id: feedbackId,
           user_id: user.id,
-          content: content.trim(),
+          content,
         })
         .select()
         .single()
 
-      if (error) {
-        console.error('Comment creation error:', error)
-        throw new Error(error.message || '댓글 작성에 실패했습니다.')
-      }
-      
+      if (error) throw error
       return data
     },
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['feedbacks'] })
-          queryClient.invalidateQueries({ queryKey: ['admin-unread-comments'] })
-        },
+    onSuccess: () => {
+      // Invalidate feedbacks query to refetch with new comment
+      queryClient.invalidateQueries({ queryKey: ['feedbacks'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-unread-comments'] })
+    },
   })
 }
 
@@ -361,13 +415,9 @@ export const useToggleCommentLike = () => {
       commentId: string
       isLiked: boolean
     }) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        throw new Error('로그인이 필요합니다.')
-      }
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
 
       if (isLiked) {
         // Unlike: delete the like
@@ -377,12 +427,9 @@ export const useToggleCommentLike = () => {
           .eq('comment_id', commentId)
           .eq('user_id', user.id)
 
-        if (error) {
-          console.error('Error unliking comment:', error)
-          throw new Error(error.message || '좋아요 취소에 실패했습니다.')
-        }
+        if (error) throw error
       } else {
-        // Like: insert the like
+        // Like: insert a new like
         const { error } = await supabase
           .from('comment_likes')
           .insert({
@@ -390,16 +437,12 @@ export const useToggleCommentLike = () => {
             user_id: user.id,
           })
 
-        if (error) {
-          console.error('Error liking comment:', error)
-          throw new Error(error.message || '좋아요에 실패했습니다.')
-        }
+        if (error) throw error
       }
     },
-    onSuccess: (_, variables) => {
-      // Invalidate all feedback queries to refresh like counts
+    onSuccess: () => {
+      // Invalidate feedbacks query to refetch with updated like count
       queryClient.invalidateQueries({ queryKey: ['feedbacks'] })
-      queryClient.invalidateQueries({ queryKey: ['feedbacks', variables.commentId] })
     },
   })
 }
@@ -459,21 +502,17 @@ export const useAdminUnreadComments = (adminId: string) => {
       })
 
       // Group by task_id to get unique tasks with unread comments
-      const tasksWithUnreadComments = new Map<string, { task_id: string; feedback_id: string }>()
-      unreadComments.forEach((comment) => {
-        const feedback = feedbacks.find((f) => f.id === comment.feedback_id)
-        if (feedback && !tasksWithUnreadComments.has(feedback.task_id)) {
-          tasksWithUnreadComments.set(feedback.task_id, {
-            task_id: feedback.task_id,
-            feedback_id: comment.feedback_id,
-          })
-        }
-      })
+      const taskIdsWithUnreadComments = [
+        ...new Set(
+          unreadComments.map((comment) => {
+            const feedback = feedbacks.find((f) => f.id === comment.feedback_id)
+            return feedback?.task_id
+          }).filter(Boolean)
+        ),
+      ]
 
-      return Array.from(tasksWithUnreadComments.values())
+      return taskIdsWithUnreadComments as string[]
     },
     enabled: !!adminId,
-    refetchInterval: 30000, // Refetch every 30 seconds to check for new comments
   })
 }
-

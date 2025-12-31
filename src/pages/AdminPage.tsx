@@ -14,6 +14,7 @@ import { AdminTaskDetailModal } from '@/components/admin/AdminTaskDetailModal'
 import { StatisticsView } from '@/components/admin/StatisticsView'
 import { EmployeeManagementView } from '@/components/admin/EmployeeManagementView'
 import { CommentListModal } from '@/components/admin/CommentListModal'
+import { GameModal } from '@/components/common/GameModal'
 import type { Task } from '@/types/index'
 
 export const AdminPage = () => {
@@ -40,6 +41,7 @@ export const AdminPage = () => {
   }>({ isOpen: false, taskId: null, employeeId: null })
 
   const [commentListModal, setCommentListModal] = useState(false)
+  const [gameModal, setGameModal] = useState(false)
 
   // Filter tasks based on selected filter
   const filteredTasks = useMemo(() => {
@@ -126,23 +128,54 @@ export const AdminPage = () => {
       return
     }
 
+    if (!user?.id) {
+      alert('로그인 정보가 없습니다. 다시 로그인해주세요.')
+      return
+    }
+
     try {
-      console.log('Sending feedback:', {
+      console.log('📤 [Admin] Sending feedback:', {
         taskId: feedbackModal.taskId,
         toUserId: feedbackModal.employeeId,
-        message: message.trim(),
+        fromUserId: user.id,
+        messageLength: message.trim().length,
+      })
+      
+      // Verify employee exists
+      const employee = employees.find(e => e.id === feedbackModal.employeeId)
+      if (!employee) {
+        console.error('❌ [Admin] Employee not found:', feedbackModal.employeeId)
+        alert('담당자 정보를 찾을 수 없습니다.')
+        return
+      }
+      
+      console.log('👤 [Admin] Sending to employee:', {
+        id: employee.id,
+        name: employee.name,
+        email: employee.email,
       })
       
       const result = await createFeedback.mutateAsync({
         taskId: feedbackModal.taskId,
         toUserId: feedbackModal.employeeId,
+        fromUserId: user.id,
         message: message.trim(),
       })
       
-      console.log('Feedback sent successfully:', result)
+      console.log('✅ [Admin] Feedback sent successfully:', result)
+      
+      // Force immediate refetch of recent feedbacks for the employee
+      queryClient.refetchQueries({ 
+        queryKey: ['recent-feedbacks', feedbackModal.employeeId],
+        exact: true 
+      })
+      
+      // 성공 메시지 표시
+      alert('피드백이 전송되었습니다!')
+      
       // 모달을 닫지 않고 유지 - 사용자가 계속 피드백을 작성할 수 있도록
     } catch (error: any) {
-      console.error('Error sending feedback:', error)
+      console.error('❌ [Admin] Error sending feedback:', error)
       const errorMessage = error?.message || error?.error?.message || '알 수 없는 오류'
       alert(`피드백 전송에 실패했습니다: ${errorMessage}`)
     }
@@ -208,21 +241,22 @@ export const AdminPage = () => {
           userName="관리자 대시보드"
           onMenuClick={() => setSidebarOpen(true)}
           onProfileClick={() => navigate('/profile')}
-        onLogoutClick={async () => {
-          if (window.confirm('로그아웃 하시겠습니까?')) {
-            try {
-              await signOut()
-              // Clear any cached data
-              queryClient.clear()
-              // Navigate to login page
-              navigate('/login', { replace: true })
-            } catch (error) {
-              console.error('Logout error:', error)
-              // Even if there's an error, navigate to login
-              navigate('/login', { replace: true })
+          onLogoutClick={async () => {
+            if (window.confirm('로그아웃 하시겠습니까?')) {
+              try {
+                await signOut()
+                // Clear any cached data
+                queryClient.clear()
+                // Navigate to login page
+                navigate('/login', { replace: true })
+              } catch (error) {
+                console.error('Logout error:', error)
+                // Even if there's an error, navigate to login
+                navigate('/login', { replace: true })
+              }
             }
-          }
-        }}
+          }}
+          onGameClick={() => setGameModal(true)}
         />
       </div>
 
@@ -318,12 +352,18 @@ export const AdminPage = () => {
       <CommentListModal
         isOpen={commentListModal}
         onClose={() => setCommentListModal(false)}
-        unreadCommentTasks={unreadComments}
+        unreadCommentTasks={unreadComments.map((taskId: string) => ({ task_id: taskId, feedback_id: '' }))}
         adminId={user?.id}
         onMarkAsViewed={() => {
           // Invalidate queries to refresh unread comments count
           queryClient.invalidateQueries({ queryKey: ['admin-unread-comments'] })
         }}
+      />
+
+      {/* Game Modal */}
+      <GameModal
+        isOpen={gameModal}
+        onClose={() => setGameModal(false)}
       />
 
       {/* Footer */}

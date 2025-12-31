@@ -59,7 +59,7 @@ export const NewTaskModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300 border border-white/40">
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300 border border-gray-200/50">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-xl px-5 md:px-6 py-4 md:py-5 flex items-center justify-between rounded-t-2xl flex-shrink-0 border-b border-white/20">
           <div className="flex items-center gap-2 md:gap-3">
@@ -90,7 +90,7 @@ export const NewTaskModal = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 빅데이터 컨설팅 및 분석 기술지원(계속)"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
             />
           </div>
 
@@ -99,7 +99,7 @@ export const NewTaskModal = ({
             <label className="block text-sm font-bold text-gray-800 mb-2">
               상세 설명
             </label>
-            <div className="bg-indigo-100/60 backdrop-blur-md border border-indigo-300/50 rounded-lg p-3 mb-2 shadow-lg">
+            <div className="bg-indigo-100 backdrop-blur-md border border-indigo-300 rounded-lg p-3 mb-2 shadow-lg">
               <p className="text-xs text-indigo-900">
                 💡 <strong>작성 가이드:</strong> 주간업무 보고시 작성 양식, 사업의 세부과제 수준 작성
               </p>
@@ -108,7 +108,7 @@ export const NewTaskModal = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="- 데이터 분석 12건 완료, OOO마트 데이터 전처리 및 가명처리 진행중&#10;- 컨설팅 30건 완료, OO 데이터 활용 컨설팅 예정(01/30)&#10;- 목표대비 달성 완료, 추가 실적 발굴 추진"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar bg-white/80 backdrop-blur-sm"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 custom-scrollbar bg-white"
               rows={6}
             />
           </div>
@@ -123,7 +123,7 @@ export const NewTaskModal = ({
               type="date"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white/80 backdrop-blur-sm"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
             />
           </div>
 
@@ -177,10 +177,10 @@ export const NewTaskModal = ({
                   <button
                     key={option.value}
                     onClick={() => setTrafficLight(option.value)}
-                    className={`p-3 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-2 backdrop-blur-md ${
+                    className={`p-3 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-2 ${
                       trafficLight === option.value
                         ? `${option.selectedBorder} ${option.selectedBg} ${option.shadowColor} shadow-lg transform scale-105`
-                        : `${option.borderColor} ${option.bgColor} ${option.hoverColor} bg-white/30`
+                        : `${option.borderColor} ${option.bgColor} ${option.hoverColor}`
                     }`}
                   >
                     <div className={`p-2 rounded-lg ${option.iconColor} ${
@@ -212,12 +212,12 @@ export const NewTaskModal = ({
                     key={option.value}
                     onClick={() => !isDisabled && setStatus(option.value)}
                     disabled={isDisabled}
-                    className={`p-3 rounded-xl border-2 transition-all duration-200 backdrop-blur-md ${
+                    className={`p-3 rounded-xl border-2 transition-all duration-200 ${
                       isDisabled
-                        ? 'border-gray-200 bg-gray-100/60 opacity-50 cursor-not-allowed'
+                        ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
                         : status === option.value
-                        ? 'border-indigo-500 bg-indigo-100/60 shadow-lg transform scale-105'
-                        : 'border-gray-300 hover:bg-gray-50/60 bg-white/30'
+                        ? 'border-indigo-500 bg-indigo-100 shadow-lg transform scale-105'
+                        : 'border-gray-300 hover:bg-gray-50 bg-white'
                     }`}
                     title={isDisabled ? '새 업무는 완료 상태로 등록할 수 없습니다' : undefined}
                   >
@@ -233,10 +233,10 @@ export const NewTaskModal = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-white/40 bg-white/40 backdrop-blur-xl px-4 md:px-6 py-3 md:py-4 flex justify-end gap-2 md:gap-3 rounded-b-2xl flex-shrink-0">
+        <div className="border-t border-gray-200 bg-white/95 backdrop-blur-xl px-4 md:px-6 py-3 md:py-4 flex justify-end gap-2 md:gap-3 rounded-b-2xl flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-2 border-2 border-white/40 bg-white/20 backdrop-blur-md text-gray-700 rounded-lg hover:bg-white/30 transition-all duration-200 font-medium shadow-lg"
+            className="px-6 py-2 border-2 border-gray-300 bg-white backdrop-blur-md text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium shadow-lg"
           >
             취소
           </button>

@@ -11,13 +11,13 @@ const RootRedirect = () => {
   const { user, isLoading } = useAuth()
   const [shouldRedirect, setShouldRedirect] = useState(false)
 
-  // If loading takes too long (more than 1 second), redirect to login
+  // If loading takes too long (more than 3 seconds), redirect to login
   useEffect(() => {
     if (isLoading) {
       const timer = setTimeout(() => {
         console.log('Loading timeout in RootRedirect, redirecting to login')
         setShouldRedirect(true)
-      }, 1000) // 1 second timeout
+      }, 3000) // 3 second timeout - allow more time
 
       return () => clearTimeout(timer)
     }

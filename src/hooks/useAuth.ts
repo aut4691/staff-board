@@ -13,6 +13,16 @@ export const useAuth = () => {
     const fetchUserProfile = async (userId: string) => {
       if (!isMounted) return
       
+      // Check if user is already loaded to avoid duplicate fetches
+      const currentUser = useAuthStore.getState().user
+      if (currentUser && currentUser.id === userId) {
+        console.log('User already loaded, skipping fetch')
+        setLoading(false)
+        return
+      }
+
+      console.log('Fetching user profile for:', userId)
+      
       try {
         const { data: userData, error } = await supabase
           .from('user_profiles')
@@ -27,10 +37,11 @@ export const useAuth = () => {
           setUser(null)
           setLoading(false)
         } else if (userData) {
-          console.log('User profile loaded:', userData.name)
+          console.log('User profile loaded:', userData.name, 'Role:', userData.role)
           setUser(userData)
           setLoading(false)
         } else {
+          console.warn('No user data returned for userId:', userId)
           setUser(null)
           setLoading(false)
         }
@@ -59,16 +70,8 @@ export const useAuth = () => {
       setLoading(true)
 
       try {
-        // Use getSession with a timeout to avoid hanging
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 800)
-        )
-
-        const {
-          data: { session },
-          error: sessionError,
-        } = await Promise.race([sessionPromise, timeoutPromise]) as any
+        // Get session directly without timeout - let Supabase handle it
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (!isMounted) {
           setLoading(false)
@@ -106,8 +109,8 @@ export const useAuth = () => {
           setLoading(false)
           return
         }
-        // If timeout or other error, assume no session and redirect to login
-        console.log('Session check failed or timed out, redirecting to login:', error?.message)
+        // If error, log and set to no session
+        console.error('Session check failed:', error?.message)
         setUser(null)
         setLoading(false)
       }
@@ -129,7 +132,7 @@ export const useAuth = () => {
           }
           setLoading(false)
         }
-      }, 1000) // 1 second timeout - faster response
+      }, 5000) // 5 second timeout - allow more time for slow networks
     }
 
     // Start session check and timeout
@@ -155,8 +158,26 @@ export const useAuth = () => {
         console.log('User signed out or no session')
         setUser(null)
         setLoading(false)
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        // User signed in, token refreshed, or initial session
+        return
+      }
+
+      // For SIGNED_IN event, check if user is already set (from LoginPage)
+      if (event === 'SIGNED_IN') {
+        const currentUser = useAuthStore.getState().user
+        if (currentUser && currentUser.id === session.user.id) {
+          // User already loaded from LoginPage, skip profile fetch
+          console.log('User already loaded from login, skipping profile fetch')
+          setLoading(false)
+          return
+        }
+        // If user not set, fetch profile (fallback case)
+        console.log('User not set, fetching profile after SIGNED_IN')
+        await fetchUserProfile(session.user.id)
+        return
+      }
+
+      if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        // Token refreshed or initial session
         if (session?.user) {
           // Check if user is already loaded
           const currentUser = useAuthStore.getState().user
@@ -166,6 +187,7 @@ export const useAuth = () => {
             setLoading(false)
           } else {
             // Fetch user profile
+            console.log('Fetching profile for', event)
             await fetchUserProfile(session.user.id)
           }
         } else {
@@ -174,10 +196,14 @@ export const useAuth = () => {
           setUser(null)
           setLoading(false)
         }
-      } else if (session?.user) {
-        // Fallback: if we have a session but no user, fetch profile
+        return
+      }
+
+      // Fallback: if we have a session but no user, fetch profile
+      if (session?.user) {
         const currentUser = useAuthStore.getState().user
         if (!currentUser || currentUser.id !== session.user.id) {
+          console.log('Fallback: fetching profile for session user')
           await fetchUserProfile(session.user.id)
         } else {
           setLoading(false)

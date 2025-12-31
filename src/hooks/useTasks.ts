@@ -7,6 +7,8 @@ export const useTasks = (userId?: string, isAdmin: boolean = false) => {
   return useQuery({
     queryKey: ['tasks', userId, isAdmin],
     queryFn: async () => {
+      console.log('📋 [useTasks] Fetching tasks:', { userId, isAdmin })
+      
       // Explicitly select all fields including memo
       let query = supabase
         .from('tasks')
@@ -15,20 +17,48 @@ export const useTasks = (userId?: string, isAdmin: boolean = false) => {
 
       // If not admin, only fetch tasks assigned to the user
       if (!isAdmin && userId) {
+        console.log('👤 [useTasks] Filtering tasks for user:', userId)
         query = query.eq('assigned_to', userId)
+      } else if (isAdmin) {
+        console.log('👑 [useTasks] Fetching all tasks (admin mode)')
       }
 
       const { data, error } = await query
 
       if (error) {
-        console.error('Error fetching tasks:', error)
+        console.error('❌ [useTasks] Error fetching tasks:', error)
         throw error
       }
       
-      console.log('Fetched tasks:', data?.length, 'tasks with memo fields')
+      console.log('✅ [useTasks] Fetched tasks:', data?.length, 'tasks')
+      
+      // 디버깅: 각 업무의 assigned_to 확인
+      if (data && data.length > 0) {
+        console.log('📊 [useTasks] Task assignments:', data.map(t => ({
+          id: t.id,
+          title: t.title,
+          assigned_to: t.assigned_to,
+        })))
+        
+        // 사용자 ID로 필터링된 경우, 실제로 해당 사용자에게 할당된 업무인지 확인
+        if (!isAdmin && userId) {
+          const mismatched = data.filter(t => t.assigned_to !== userId)
+          if (mismatched.length > 0) {
+            console.warn('⚠️ [useTasks] Found tasks not assigned to user:', mismatched.map(t => ({
+              id: t.id,
+              title: t.title,
+              assigned_to: t.assigned_to,
+              expected: userId,
+            })))
+          }
+        }
+      }
+      
       return (data || []) as Task[]
     },
     enabled: !!userId || isAdmin,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   })
 }
 

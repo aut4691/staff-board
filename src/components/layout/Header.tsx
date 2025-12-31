@@ -1,17 +1,19 @@
-import { User, LogOut, Menu } from 'lucide-react'
+import { User, LogOut, Menu, Gamepad2 } from 'lucide-react'
 
 interface HeaderProps {
   userName: string
   onProfileClick?: () => void
   onLogoutClick?: () => void
   onMenuClick?: () => void
+  onGameClick?: () => void
 }
 
 export const Header = ({ 
   userName, 
   onProfileClick,
   onLogoutClick,
-  onMenuClick
+  onMenuClick,
+  onGameClick
 }: HeaderProps) => {
   const isAdmin = userName.includes('관리자')
   
@@ -45,6 +47,18 @@ export const Header = ({
             title="회원정보 수정"
           >
             <User className="w-6 h-6 text-white drop-shadow-md" />
+          </button>
+        )}
+        
+        {/* Game Button */}
+        {onGameClick && (
+          <button 
+            onClick={onGameClick}
+            className="p-2 hover:bg-white/30 backdrop-blur-md rounded-full transition-all duration-200 hover:scale-110 border border-white/20"
+            aria-label="게임"
+            title="게임하기"
+          >
+            <Gamepad2 className="w-6 h-6 text-white drop-shadow-md" />
           </button>
         )}
         
