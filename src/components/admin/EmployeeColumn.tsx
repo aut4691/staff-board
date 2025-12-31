@@ -15,7 +15,7 @@ export const EmployeeColumn = ({
   onViewDetails,
 }: EmployeeColumnProps) => {
   return (
-    <div className="flex flex-col w-full sm:w-auto min-w-[260px] sm:min-w-[280px] md:min-w-[300px] lg:min-w-[320px] flex-shrink-0">
+    <div className="flex flex-col w-full sm:w-[280px] md:w-[300px] lg:w-[320px] flex-shrink-0">
       {/* Column Header */}
       <div className="bg-gradient-to-r from-indigo-600/80 to-blue-500/80 backdrop-blur-xl rounded-t-xl px-4 md:px-5 py-3 md:py-4 shadow-2xl mb-4 border border-white/20">
         <div className="text-white">
