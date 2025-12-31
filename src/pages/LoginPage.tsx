@@ -232,45 +232,20 @@ export const LoginPage = () => {
       }
 
       // Set user in auth store - this will trigger onAuthStateChange to skip
-      useAuthStore.getState().setUser(profile)
+      // IMPORTANT: Set loading to false BEFORE setting user to prevent race conditions
       useAuthStore.getState().setLoading(false)
+      useAuthStore.getState().setUser(profile)
 
       console.log('User set in auth store, preparing navigation...', profile.role)
 
       // Reset local loading state
       setLoading(false)
 
-      // Wait a moment for state to propagate, then navigate
-      // Use requestAnimationFrame to ensure React has updated
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          const currentUser = useAuthStore.getState().user
-          if (currentUser && currentUser.id === profile.id) {
-            console.log('Navigating to:', profile.role === 'admin' ? '/admin' : '/user')
-            if (profile.role === 'admin') {
-              navigate('/admin', { replace: true })
-            } else {
-              navigate('/user', { replace: true })
-            }
-          } else {
-            console.error('User state mismatch, retrying navigation...')
-            // Retry once more
-            setTimeout(() => {
-              const retryUser = useAuthStore.getState().user
-              if (retryUser && retryUser.id === profile.id) {
-                if (profile.role === 'admin') {
-                  navigate('/admin', { replace: true })
-                } else {
-                  navigate('/user', { replace: true })
-                }
-              } else {
-                console.error('Navigation failed: user state not set correctly')
-                setError('로그인은 성공했지만 페이지 이동에 실패했습니다. 새로고침해주세요.')
-              }
-            }, 200)
-          }
-        }, 150)
-      })
+      // Navigate immediately - no need to wait since we've set the user
+      // The ProtectedRoute will check the store directly
+      const targetPath = profile.role === 'admin' ? '/admin' : '/user'
+      console.log('Navigating to:', targetPath)
+      navigate(targetPath, { replace: true })
     } catch (err: any) {
       // More user-friendly error messages
       let errorMessage = '로그인에 실패했습니다.'

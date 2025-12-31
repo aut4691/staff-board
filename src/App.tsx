@@ -51,6 +51,16 @@ const ProtectedRoute = ({
 }) => {
   const { user, isLoading } = useAuthStore()
 
+  // If we have a user, don't wait for loading - show the page immediately
+  // This prevents stuck loading screen after login
+  if (user) {
+    if (requireAdmin && user.role !== 'admin') {
+      return <Navigate to="/user" replace />
+    }
+    return <>{children}</>
+  }
+
+  // If no user and still loading, show loading screen
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
@@ -62,12 +72,9 @@ const ProtectedRoute = ({
     )
   }
 
+  // No user and not loading - redirect to login
   if (!user) {
     return <Navigate to="/login" replace />
-  }
-
-  if (requireAdmin && user.role !== 'admin') {
-    return <Navigate to="/user" replace />
   }
 
   return <>{children}</>

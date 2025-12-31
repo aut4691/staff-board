@@ -187,11 +187,13 @@ export const useAuth = () => {
         if (currentUser && currentUser.id === session.user.id) {
           // User already loaded from LoginPage, skip profile fetch
           console.log('User already loaded from login, skipping profile fetch')
+          // Ensure loading is false - LoginPage should have set it, but be safe
           setLoading(false)
           return
         }
         // If user not set, fetch profile (fallback case)
         console.log('User not set, fetching profile after SIGNED_IN')
+        // Don't set loading to true here - it might already be false from LoginPage
         await fetchUserProfile(session.user.id)
         return
       }
@@ -204,10 +206,17 @@ export const useAuth = () => {
           if (currentUser && currentUser.id === session.user.id) {
             // User already loaded, just ensure loading is false
             console.log('User already loaded, skipping profile fetch')
-            setLoading(false)
+            // Don't change loading state if user is already set - it should already be false
+            if (useAuthStore.getState().isLoading) {
+              setLoading(false)
+            }
           } else {
             // Fetch user profile
             console.log('Fetching profile for', event)
+            // Only set loading if we don't have a user yet
+            if (!currentUser) {
+              setLoading(true)
+            }
             await fetchUserProfile(session.user.id)
           }
         } else {
@@ -224,9 +233,16 @@ export const useAuth = () => {
         const currentUser = useAuthStore.getState().user
         if (!currentUser || currentUser.id !== session.user.id) {
           console.log('Fallback: fetching profile for session user')
+          // Only set loading if we don't have a user yet
+          if (!currentUser) {
+            setLoading(true)
+          }
           await fetchUserProfile(session.user.id)
         } else {
-          setLoading(false)
+          // User already set, just ensure loading is false
+          if (useAuthStore.getState().isLoading) {
+            setLoading(false)
+          }
         }
       } else {
         // No session and no specific event, ensure loading is false
