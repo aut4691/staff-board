@@ -2,10 +2,22 @@ import { useEffect } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
 
+// Prevent multiple concurrent auth listeners / session checks across components.
+// This app currently calls `useAuth()` in multiple places (routes/pages).
+let authInitStarted = false
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 export const useAuth = () => {
   const { user, isLoading, setUser, setLoading, logout } = useAuthStore()
 
   useEffect(() => {
+    // Ensure auth initialization runs only once per app lifetime.
+    if (authInitStarted) {
+      return
+    }
+    authInitStarted = true
+
     let isMounted = true
     let hasCheckedSession = false
 
@@ -24,27 +36,35 @@ export const useAuth = () => {
       console.log('Fetching user profile for:', userId)
       
       try {
-        const { data: userData, error } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', userId)
-          .single()
+        // Profile can be created by trigger right after auth; on slow networks it may take a moment.
+        // Retry a few times to avoid intermittent "profile not found" causing stuck login.
+        let lastError: any = null
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const { data: userData, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle()
+
+          if (userData) {
+            if (!isMounted) return
+            console.log('User profile loaded:', userData.name, 'Role:', userData.role)
+            setUser(userData)
+            setLoading(false)
+            return
+          }
+
+          lastError = error
+          // wait: 150ms, 300ms, 450ms, 600ms
+          await sleep(150 * (attempt + 1))
+        }
 
         if (!isMounted) return
 
-        if (error) {
-          console.error('Error fetching user profile:', error)
-          setUser(null)
-          setLoading(false)
-        } else if (userData) {
-          console.log('User profile loaded:', userData.name, 'Role:', userData.role)
-          setUser(userData)
-          setLoading(false)
-        } else {
-          console.warn('No user data returned for userId:', userId)
-          setUser(null)
-          setLoading(false)
-        }
+        if (lastError) console.error('Error fetching user profile:', lastError)
+        console.warn('User profile not available after retries for userId:', userId)
+        setUser(null)
+        setLoading(false)
       } catch (error) {
         if (!isMounted) return
         console.error('Error fetching user profile:', error)
@@ -217,10 +237,10 @@ export const useAuth = () => {
     })
 
     return () => {
+      // NOTE: We intentionally do NOT reset authInitStarted here.
+      // The auth listener should remain active for the whole app lifetime.
       isMounted = false
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout)
-      }
+      if (loadingTimeout) clearTimeout(loadingTimeout)
       subscription.unsubscribe()
     }
   }, [setUser, setLoading])

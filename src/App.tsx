@@ -1,32 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/hooks/useAuth'
 import { LoginPage } from './pages/LoginPage'
 import { UserPage } from './pages/UserPage'
 import { AdminPage } from './pages/AdminPage'
 import { ProfilePage } from './pages/ProfilePage'
 
+// Ensure auth listener/session bootstrap is mounted on ALL routes (including /login).
+const AuthBootstrap = () => {
+  useAuth()
+  return null
+}
+
 // Root redirect component - handles authentication state and redirects accordingly
 const RootRedirect = () => {
-  const { user, isLoading } = useAuth()
-  const [shouldRedirect, setShouldRedirect] = useState(false)
-
-  // If loading takes too long (more than 3 seconds), redirect to login
-  useEffect(() => {
-    if (isLoading) {
-      const timer = setTimeout(() => {
-        console.log('Loading timeout in RootRedirect, redirecting to login')
-        setShouldRedirect(true)
-      }, 3000) // 3 second timeout - allow more time
-
-      return () => clearTimeout(timer)
-    }
-  }, [isLoading])
-
-  // If loading timeout reached, redirect to login immediately
-  if (shouldRedirect) {
-    return <Navigate to="/login" replace />
-  }
+  const { user, isLoading } = useAuthStore()
 
   // If loading, show loading screen
   if (isLoading) {
@@ -61,7 +49,7 @@ const ProtectedRoute = ({
   children: React.ReactNode
   requireAdmin?: boolean
 }) => {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading } = useAuthStore()
 
   if (isLoading) {
     return (
@@ -88,6 +76,7 @@ const ProtectedRoute = ({
 function App() {
   return (
     <BrowserRouter>
+      <AuthBootstrap />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<RootRedirect />} />

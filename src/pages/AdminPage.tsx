@@ -14,7 +14,7 @@ import { AdminTaskDetailModal } from '@/components/admin/AdminTaskDetailModal'
 import { StatisticsView } from '@/components/admin/StatisticsView'
 import { EmployeeManagementView } from '@/components/admin/EmployeeManagementView'
 import { CommentListModal } from '@/components/admin/CommentListModal'
-import { GameModal } from '@/components/common/GameModal'
+import { GameSelectModal } from '@/components/common/GameSelectModal'
 import type { Task } from '@/types/index'
 
 export const AdminPage = () => {
@@ -360,8 +360,8 @@ export const AdminPage = () => {
         }}
       />
 
-      {/* Game Modal */}
-      <GameModal
+      {/* Game Select Modal */}
+      <GameSelectModal
         isOpen={gameModal}
         onClose={() => setGameModal(false)}
       />

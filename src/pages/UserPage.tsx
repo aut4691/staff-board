@@ -13,7 +13,7 @@ import { FeedbackListModal } from '@/components/user/FeedbackListModal'
 import { StatusUpdateModal } from '@/components/user/StatusUpdateModal'
 import { TaskDetailModal } from '@/components/user/TaskDetailModal'
 import { NewTaskModal } from '@/components/user/NewTaskModal'
-import { GameModal } from '@/components/common/GameModal'
+import { GameSelectModal } from '@/components/common/GameSelectModal'
 import { useQueryClient } from '@tanstack/react-query'
 import type { TaskStatus, TrafficLightColor } from '@/types/index'
 
@@ -486,8 +486,8 @@ export const UserPage = () => {
         }}
       />
 
-      {/* Game Modal */}
-      <GameModal
+      {/* Game Select Modal */}
+      <GameSelectModal
         isOpen={gameModal}
         onClose={() => setGameModal(false)}
       />

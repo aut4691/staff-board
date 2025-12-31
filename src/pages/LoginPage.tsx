@@ -16,6 +16,8 @@ export const LoginPage = () => {
   const navigate = useNavigate()
   const { user: currentUser, isLoading: authLoading } = useAuthStore()
 
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
   // Redirect if user is already logged in
   useEffect(() => {
     if (!authLoading && currentUser) {
@@ -151,25 +153,25 @@ export const LoginPage = () => {
       }
 
       console.log('Login successful, user ID:', data.user.id)
-
-      // Verify session is properly set
-      const { data: { session: verifiedSession }, error: sessionVerifyError } = await supabase.auth.getSession()
-      
-      if (sessionVerifyError || !verifiedSession) {
-        console.error('Session verification failed:', sessionVerifyError)
-        setError('세션 확인에 실패했습니다. 다시 시도해주세요.')
-        setLoading(false)
-        return
-      }
-
-      console.log('Session verified, fetching profile...')
+      // Fetch profile (session can take a tick to persist on some browsers; avoid blocking on getSession here)
+      console.log('Fetching profile...')
 
       // Fetch full user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single()
+      let profile: any = null
+      let profileError: any = null
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const res = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .maybeSingle()
+
+        profile = res.data
+        profileError = res.error
+
+        if (profile) break
+        await sleep(150 * (attempt + 1))
+      }
 
       if (profileError) {
         console.error('Profile fetch error:', profileError)
