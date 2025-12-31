@@ -18,6 +18,20 @@ export const LoginPage = () => {
 
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+  const clearLocalAuth = async (reason: string) => {
+    console.warn('Clearing local auth (login page):', reason)
+    try {
+      await supabase.auth.signOut()
+    } catch (err) {
+      console.error('Supabase signOut failed while clearing auth:', err)
+    }
+    try {
+      localStorage.clear()
+    } catch (err) {
+      console.error('localStorage.clear failed:', err)
+    }
+  }
+
   // Redirect if user is already logged in
   useEffect(() => {
     if (!authLoading && currentUser) {
@@ -173,6 +187,20 @@ export const LoginPage = () => {
         await sleep(150 * (attempt + 1))
       }
 
+      // Clear old tokens immediately on auth/profile token errors
+      if (
+        profileError &&
+        (((profileError as any)?.status === 401 ||
+          (profileError as any)?.status === 403 ||
+          profileError.code === 'PGRST301') ||
+          (profileError.message && /jwt|token/i.test(profileError.message)))
+      ) {
+        await clearLocalAuth('Invalid token while fetching profile after login')
+        setError('세션이 만료되었습니다. 다시 로그인해주세요.')
+        setLoading(false)
+        return
+      }
+
       if (profileError) {
         console.error('Profile fetch error:', profileError)
         setError('사용자 정보를 불러올 수 없습니다.')
@@ -249,6 +277,10 @@ export const LoginPage = () => {
     } catch (err: any) {
       // More user-friendly error messages
       let errorMessage = '로그인에 실패했습니다.'
+      
+      if (err?.message && /jwt|token/i.test(err.message)) {
+        await clearLocalAuth('Invalid token during login error')
+      }
       
       if (err.message) {
         if (err.message.includes('Invalid login credentials') || err.message.includes('invalid_credentials')) {

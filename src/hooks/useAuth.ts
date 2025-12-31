@@ -21,6 +21,32 @@ export const useAuth = () => {
     let isMounted = true
     let hasCheckedSession = false
 
+    // Clears supabase auth + browser localStorage to recover from stale/invalid tokens
+    const clearLocalAuth = async (reason: string, options: { skipSignOut?: boolean } = {}) => {
+      const { skipSignOut } = options
+      console.warn('Clearing local auth state:', reason)
+
+      try {
+        // Avoid double signOut when we are already in SIGNED_OUT event
+        if (!skipSignOut) {
+          await supabase.auth.signOut()
+        }
+      } catch (err) {
+        console.error('Error during supabase signOut while clearing auth:', err)
+      }
+
+      try {
+        localStorage.clear()
+      } catch (err) {
+        console.error('Failed to clear localStorage:', err)
+      }
+
+      if (isMounted) {
+        setUser(null)
+        setLoading(false)
+      }
+    }
+
     // Function to fetch and set user profile
     const fetchUserProfile = async (userId: string) => {
       if (!isMounted) return
@@ -51,6 +77,18 @@ export const useAuth = () => {
             console.log('User profile loaded:', userData.name, 'Role:', userData.role)
             setUser(userData)
             setLoading(false)
+            return
+          }
+
+          // If token is invalid/expired, clear local state immediately
+          if (
+            error &&
+            (((error as any)?.status === 401 ||
+              (error as any)?.status === 403 ||
+              error.code === 'PGRST301') ||
+              (error.message && /jwt|token/i.test(error.message)))
+          ) {
+            await clearLocalAuth('Invalid token while fetching profile', { skipSignOut: false })
             return
           }
 
@@ -100,8 +138,7 @@ export const useAuth = () => {
 
         if (sessionError) {
           console.error('Error getting session:', sessionError)
-          setUser(null)
-          setLoading(false)
+          await clearLocalAuth('getSession error', { skipSignOut: false })
           return
         }
 
@@ -111,9 +148,7 @@ export const useAuth = () => {
           if (expiresAt && expiresAt * 1000 < Date.now()) {
             // Session expired, clear it
             console.log('Session expired, clearing and redirecting to login')
-            await supabase.auth.signOut()
-            setUser(null)
-            setLoading(false)
+            await clearLocalAuth('Session expired', { skipSignOut: false })
           } else {
             // Session is valid, fetch user profile
             await fetchUserProfile(session.user.id)
@@ -131,8 +166,7 @@ export const useAuth = () => {
         }
         // If error, log and set to no session
         console.error('Session check failed:', error?.message)
-        setUser(null)
-        setLoading(false)
+        await clearLocalAuth('Session check exception', { skipSignOut: false })
       }
     }
 
@@ -176,8 +210,7 @@ export const useAuth = () => {
       if (event === 'SIGNED_OUT' || !session?.user) {
         // User signed out or no session
         console.log('User signed out or no session')
-        setUser(null)
-        setLoading(false)
+        await clearLocalAuth('SIGNED_OUT event', { skipSignOut: true })
         return
       }
 
